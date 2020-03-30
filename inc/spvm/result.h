@@ -7,13 +7,14 @@
 
 enum spvm_result_type {
 	spvm_result_type_none,
+	spvm_result_type_string,
 	spvm_result_type_extension,
 	spvm_result_type_function_type,
 	spvm_result_type_type,
 	spvm_result_type_variable,
 	spvm_result_type_constant,
 	spvm_result_type_function,
-	spvm_result_type_access_chain
+	spvm_result_type_access_chain,
 };
 typedef struct {
 	spvm_word argc;
@@ -22,12 +23,13 @@ typedef struct {
 	SpvDecoration type;
 	spvm_word literal1, literal2;
 } spvm_decoration;
-typedef struct {
+typedef struct spvm_result {
 	char type;
 
 	spvm_string name;
 	spvm_word pointer; // pointer to spvm_result
 	SpvStorageClass storage_class;
+	struct spvm_result* parameter_owner;
 
 	spvm_word value_count;
 	spvm_value* value;
@@ -50,7 +52,6 @@ typedef struct {
 	char value_type;
 	unsigned int value_bitmask;
 	char value_sign;
-	unsigned int vector_comp_count;
 } spvm_result;
 typedef spvm_result* spvm_result_t;
 

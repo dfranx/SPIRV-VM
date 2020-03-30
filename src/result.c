@@ -8,7 +8,7 @@ void spvm_decoration_read(spvm_source src, SpvDecoration decor, spvm_word* liter
 	case SpvDecorationArrayStride:
 	case SpvDecorationMatrixStride:
 	case SpvDecorationBuiltIn:
-		//case SpvDecorationUniformId:
+	case SpvDecorationUniformId:
 	case SpvDecorationStream:
 	case SpvDecorationLocation:
 	case SpvDecorationComponent:
@@ -23,15 +23,13 @@ void spvm_decoration_read(spvm_source src, SpvDecoration decor, spvm_word* liter
 	case SpvDecorationFPFastMathMode:
 	case SpvDecorationInputAttachmentIndex:
 	case SpvDecorationAlignment:
-		// case SpvDecorationMaxByteOffset:
-		// case SpvDecorationAlignmentId:
-		// case SpvDecorationMaxByteOffsetId:
+	case SpvDecorationMaxByteOffset:
+	case SpvDecorationAlignmentId:
+	case SpvDecorationMaxByteOffsetId:
 	case SpvDecorationSecondaryViewportRelativeNV:
-		// case SpvDecorationCounterBuffer:
-	case SpvDecorationHlslCounterBufferGOOGLE:
-		// case SpvDecorationUserSemantic:
-	case SpvDecorationHlslSemanticGOOGLE:
-		// case SpvDecorationUserTypeGOOGLE:
+	case SpvDecorationCounterBuffer:
+	case SpvDecorationUserSemantic:
+	case SpvDecorationUserTypeGOOGLE:
 		*literal1 = SPVM_READ_WORD(src);
 		break;
 

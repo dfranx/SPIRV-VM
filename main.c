@@ -31,13 +31,13 @@ int main()
 	spvm_program_t prog = spvm_program_create(spv, spv_length);
 	spvm_state_t state = spvm_state_create(prog);
 
-	spvm_state_set_value(state, "uValue", 0.2f, 0.3f);
+	float uValue[2] = { 0.2f, 0.3f };
+	spvm_state_set_value_f(state, "uValue", uValue);
 
-	spvm_source main_code = spvm_state_get_function(state, "main");
-	spvm_state_call_function(main_code, state);
+	spvm_source fnMain = spvm_state_get_result(state, "main");
+	spvm_state_call_function(fnMain, state);
 
 	spvm_result_t outColor = spvm_state_get_result(state, "outColor");
-
 	printf("outColor = ");
 	for (int i = 0; i < outColor->value_count; i++)
 		printf("%.2f ", outColor->value[i].f);
