@@ -1,4 +1,5 @@
 #include <spvm/result.h>
+#include <spvm/state.h>
 #include <spvm/spirv.h>
 
 void spvm_decoration_read(spvm_source src, SpvDecoration decor, spvm_word* literal1, spvm_word* literal2)
@@ -50,4 +51,15 @@ void spvm_result_add_decoration(spvm_result_t result, SpvDecoration decor, spvm_
 	d->type = decor;
 	d->literal1 = literal1;
 	d->literal2 = literal2;
+}
+void spvm_result_allocate_value(spvm_result_t val, spvm_word count)
+{
+	val->value_count = count;
+	val->value = (spvm_value*)calloc(count, sizeof(spvm_value));
+}
+void spvm_result_allocate_typed_value(spvm_result_t val, spvm_result* results, spvm_word type)
+{
+	spvm_word count = spvm_state_get_value_count(results, &results[type]);
+	spvm_result_allocate_value(val, count);
+	val->pointer = type;
 }

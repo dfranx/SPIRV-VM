@@ -58,6 +58,7 @@ typedef spvm_result* spvm_result_t;
 
 void spvm_decoration_read(spvm_source src, SpvDecoration decor, spvm_word* literal1, spvm_word* literal2);
 void spvm_result_add_decoration(spvm_result_t result, SpvDecoration decor, spvm_word literal1, spvm_word literal2);
-
+void spvm_result_allocate_value(spvm_result_t val, spvm_word count);
+void spvm_result_allocate_typed_value(spvm_result_t val, spvm_result* results, spvm_word type);
 
 #endif // __SPIRV_VM_RESULT_H__

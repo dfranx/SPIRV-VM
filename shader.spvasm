@@ -1,7 +1,7 @@
 ; SPIR-V
 ; Version: 1.0
 ; Generator: Google Shaderc over Glslang; 8
-; Bound: 41
+; Bound: 44
 ; Schema: 0
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -20,6 +20,8 @@
                OpName %param "param"
                OpName %param_0 "param"
                OpName %outColor "outColor"
+               OpName %param_1 "param"
+               OpName %param_2 "param"
                OpDecorate %uValue Location 0
                OpDecorate %outColor Location 0
        %void = OpTypeVoid
@@ -37,7 +39,7 @@
     %v4float = OpTypeVector %float 4
 %_ptr_Output_v4float = OpTypePointer Output %v4float
    %outColor = OpVariable %_ptr_Output_v4float Output
-%float_0_400000006 = OpConstant %float 0.400000006
+%float_0_200000003 = OpConstant %float 0.200000003
 %float_0_800000012 = OpConstant %float 0.800000012
     %float_1 = OpConstant %float 1
        %main = OpFunction %void None %3
@@ -45,6 +47,8 @@
         %a_0 = OpVariable %_ptr_Function_float Function
       %param = OpVariable %_ptr_Function_float Function
     %param_0 = OpVariable %_ptr_Function_float Function
+    %param_1 = OpVariable %_ptr_Function_float Function
+    %param_2 = OpVariable %_ptr_Function_float Function
          %26 = OpAccessChain %_ptr_UniformConstant_float %uValue %uint_0
          %27 = OpLoad %float %26
                OpStore %param %27
@@ -54,8 +58,11 @@
          %32 = OpFunctionCall %float %sum_f1_f1_ %param %param_0
                OpStore %a_0 %32
          %36 = OpLoad %float %a_0
-         %40 = OpCompositeConstruct %v4float %36 %float_0_400000006 %float_0_800000012 %float_1
-               OpStore %outColor %40
+               OpStore %param_1 %float_0_200000003
+               OpStore %param_2 %float_0_200000003
+         %40 = OpFunctionCall %float %sum_f1_f1_ %param_1 %param_2
+         %43 = OpCompositeConstruct %v4float %36 %40 %float_0_800000012 %float_1
+               OpStore %outColor %43
                OpReturn
                OpFunctionEnd
  %sum_f1_f1_ = OpFunction %float None %8

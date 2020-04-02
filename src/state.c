@@ -38,10 +38,10 @@ spvm_state_t spvm_state_create(spvm_program_t prog)
 
 	return state;
 }
-spvm_word spvm_value_get_count(spvm_result_t res_list, spvm_result_t res)
+spvm_word spvm_state_get_value_count(spvm_result_t res_list, spvm_result_t res)
 {
 	if (res->value_type == spvm_value_type_pointer)
-		return spvm_value_get_count(res_list, &res_list[res->pointer]);
+		return spvm_state_get_value_count(res_list, &res_list[res->pointer]);
 	else if (res->value_type == spvm_value_type_vector)
 		return res->value_count;
 
