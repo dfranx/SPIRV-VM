@@ -15,6 +15,7 @@ enum spvm_result_type {
 	spvm_result_type_constant,
 	spvm_result_type_function,
 	spvm_result_type_access_chain,
+	spvm_result_type_label
 };
 typedef struct {
 	spvm_word argc;
@@ -46,7 +47,9 @@ typedef struct spvm_result {
 	/* spvm_result_type_function_type */
 	spvm_word param_count;
 	spvm_word* param_type;
-	spvm_source function_start;
+
+	/* function & label */
+	spvm_source source_location;
 
 	/* op type */
 	char value_type;
