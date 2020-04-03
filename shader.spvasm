@@ -1,7 +1,7 @@
 ; SPIR-V
 ; Version: 1.5
 ; Generator: Google Shaderc over Glslang; 8
-; Bound: 74
+; Bound: 77
 ; Schema: 0
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -77,36 +77,38 @@
                OpStore %b %int_3
                OpStore %c %int_3
          %40 = OpLoad %int %sel
-               OpSelectionMerge %44 None
-               OpSwitch %40 %43 0 %41 1 %42
-         %43 = OpLabel
+               OpSelectionMerge %45 None
+               OpSwitch %40 %44 0 %41 1 %42 2 %43
+         %44 = OpLabel
                OpStore %c %int_2
-               OpBranch %44
+               OpBranch %45
          %41 = OpLabel
                OpStore %c %int_4
-               OpBranch %44
+               OpBranch %45
          %42 = OpLabel
                OpStore %c %int_5
-               OpBranch %44
-         %44 = OpLabel
-         %52 = OpLoad %int %b
-         %53 = OpLoad %int %c
-         %54 = OpIMul %int %52 %53
-         %57 = OpSLessThanEqual %bool %54 %int_12
-               OpSelectionMerge %59 None
-               OpBranchConditional %57 %58 %59
-         %58 = OpLabel
-         %61 = OpLoad %float %a
-         %62 = OpFMul %float %61 %float_2
-               OpStore %a %62
-               OpBranch %59
-         %59 = OpLabel
-         %66 = OpLoad %float %a
+               OpBranch %45
+         %43 = OpLabel
+               OpKill
+         %45 = OpLabel
+         %55 = OpLoad %int %b
+         %56 = OpLoad %int %c
+         %57 = OpIMul %int %55 %56
+         %60 = OpSLessThanEqual %bool %57 %int_12
+               OpSelectionMerge %62 None
+               OpBranchConditional %60 %61 %62
+         %61 = OpLabel
+         %64 = OpLoad %float %a
+         %65 = OpFMul %float %64 %float_2
+               OpStore %a %65
+               OpBranch %62
+         %62 = OpLabel
+         %69 = OpLoad %float %a
                OpStore %param_1 %float_0_200000003
                OpStore %param_2 %float_0_200000003
-         %70 = OpFunctionCall %float %sum_f1_f1_ %param_1 %param_2
-         %73 = OpCompositeConstruct %v4float %66 %70 %float_0_800000012 %float_1
-               OpStore %outColor %73
+         %73 = OpFunctionCall %float %sum_f1_f1_ %param_1 %param_2
+         %76 = OpCompositeConstruct %v4float %69 %73 %float_0_800000012 %float_1
+               OpStore %outColor %76
                OpReturn
                OpFunctionEnd
  %sum_f1_f1_ = OpFunction %float None %8

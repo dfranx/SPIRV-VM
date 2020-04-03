@@ -60,6 +60,7 @@ void spvm_state_call_function(spvm_result_t code, spvm_state_t state)
 	state->function_stack[0] = code->source_location;
 	state->function_stack_info[0] = code;
 	state->did_jump = 0;
+	state->discarded = 0;
 
 	spvm_program_t prog = state->owner;
 

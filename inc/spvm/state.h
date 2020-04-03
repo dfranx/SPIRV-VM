@@ -12,6 +12,7 @@ typedef struct {
 	char parsing;
 
 	spvm_byte did_jump;
+	spvm_byte discarded;
 
 	spvm_result_t current_function;
 

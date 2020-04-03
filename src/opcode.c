@@ -19,12 +19,14 @@ Composite Instructions
 
 reimplement variable definitions
 
-0. branching
+0. loops
 1. matrices
 2. structures & undefined values (recode spvm_value definition [struct with a union inside and additional properties])
+3. arrays
+4. functions with "out" parameter
 
-x. executing shaders multiple times & memory leaks
-y. split opcodes into spvm_execute_OpXYZ and spvm_setup_OpXYZ & make the opcode tables global
+x. split opcodes into spvm_execute_OpXYZ and spvm_setup_OpXYZ & make the opcode tables global
+y. executing shaders multiple times & memory leaks
 z. XY bit sized values
 */
 
@@ -1136,9 +1138,12 @@ void spvm_execute_OpSwitch(spvm_word word_count, spvm_state_t state)
 
 	state->did_jump = 1;
 }
-
-
-
+void spvm_execute_OpKill(spvm_word word_count, spvm_state_t state)
+{
+	state->code_current = NULL;
+	state->did_jump = 1;
+	state->discarded = 1;
+}
 
 void spvm_program_create_opcode_table(spvm_program_t prog)
 {
@@ -1248,4 +1253,5 @@ void spvm_program_create_opcode_table(spvm_program_t prog)
 	prog->opcode_table[SpvOpBranch] = spvm_execute_OpBranch;
 	prog->opcode_table[SpvOpBranchConditional] = spvm_execute_OpBranchConditional;
 	prog->opcode_table[SpvOpSwitch] = spvm_execute_OpSwitch;
+	prog->opcode_table[SpvOpKill] = spvm_execute_OpKill;
 }

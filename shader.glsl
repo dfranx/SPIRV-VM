@@ -22,6 +22,9 @@ void main()
 		case 1: 
 			c = 5;
 		break;
+		case 2:
+			discard;
+			break;
 		default:
 			c = 2;
 			break;

@@ -34,7 +34,7 @@ int main()
 	float uValue[2] = { 0.2f, 0.3f };
 	spvm_state_set_value_f(state, "uValue", uValue);
 
-	int sel = 1;
+	int sel = 0;
 	spvm_state_set_value_i(state, "sel", &sel);
 
 	spvm_source fnMain = spvm_state_get_result(state, "main");
@@ -42,6 +42,9 @@ int main()
 
 	spvm_result_t c = spvm_state_get_result(state, "c");
 	printf("c: %d\n", c->value[0].i);
+
+
+	printf("discarded: %d\n", state->discarded);
 
 	spvm_result_t outColor = spvm_state_get_result(state, "outColor");
 	printf("outColor = ");
