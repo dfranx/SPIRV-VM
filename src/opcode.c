@@ -5,14 +5,11 @@
 #include <math.h>
 
 /*
-1. matrices
-2. arrays
-3. split opcodes into spvm_execute_OpXYZ and spvm_setup_OpXYZ & make the opcode tables global
-4. proper value copying (nested structures) - OpCompositeInsert, OpCopyObject
-5. executing shaders multiple times & memory leaks
-6. X bit sized values
-7. textures
-8. extensions
+1. split opcodes into spvm_execute_OpXYZ and spvm_setup_OpXYZ & make the opcode tables global
+2. executing shaders multiple times & memory leaks
+3. X bit sized values
+4. textures
+5. extensions
 */
 
 /* opcodes */
@@ -308,7 +305,7 @@ void spvm_execute_OpStore(spvm_word word_count, spvm_state_t state)
 	spvm_word ptr_id = SPVM_READ_WORD(state->code_current);
 	spvm_word val_id = SPVM_READ_WORD(state->code_current);
 
-	memcpy(state->results[ptr_id].members, state->results[val_id].members, sizeof(spvm_member) * state->results[ptr_id].member_count); // TODO: spvm_member_copy()
+	spvm_member_memcpy(state->results[ptr_id].members, state->results[val_id].members, state->results[ptr_id].member_count);
 }
 void spvm_execute_OpLoad(spvm_word word_count, spvm_state_t state)
 {
@@ -318,15 +315,15 @@ void spvm_execute_OpLoad(spvm_word word_count, spvm_state_t state)
 
 	state->results[id].type = spvm_result_type_constant;
 	spvm_result_allocate_typed_value(&state->results[id], state->results, res_type);
-	memcpy(state->results[id].members, state->results[ptr_id].members, state->results[ptr_id].member_count * sizeof(spvm_member));  // TODO: spvm_member_copy()
+
+	spvm_member_memcpy(state->results[id].members, state->results[ptr_id].members, state->results[ptr_id].member_count);
 }
 void spvm_execute_OpCopyMemory(spvm_word word_count, spvm_state_t state)
 {
 	spvm_word target = SPVM_READ_WORD(state->code_current);
 	spvm_word source = SPVM_READ_WORD(state->code_current);
 
-	// TODO: spvm_member_copy()
-	memcpy(state->results[target].members, state->results[source].members, state->results[target].member_count * sizeof(spvm_member));
+	spvm_member_memcpy(state->results[target].members, state->results[source].members, state->results[target].member_count);
 }
 void spvm_execute_OpCopyMemorySized(spvm_word word_count, spvm_state_t state)
 {
@@ -336,7 +333,7 @@ void spvm_execute_OpCopyMemorySized(spvm_word word_count, spvm_state_t state)
 
 	spvm_word size = state->results[size_id].members[0].value.s;
 
-	// TODO: spvm_member_copy()
+	// TODO: spvm_member_copy_sized()
 	memcpy(state->results[target].members, state->results[source].members, size);
 }
 void spvm_execute_OpAccessChain(spvm_word word_count, spvm_state_t state)
@@ -364,8 +361,13 @@ void spvm_execute_OpAccessChain(spvm_word word_count, spvm_state_t state)
 		index_count--;
 	}
 
-	state->results[id].member_count = 1;
-	state->results[id].members = result;
+	if (result->member_count != 0) {
+		state->results[id].member_count = result->member_count;
+		state->results[id].members = result->members;
+	} else {
+		state->results[id].member_count = 1;
+		state->results[id].members = result;
+	}
 }
 void spvm_execute_OpPtrEqual(spvm_word word_count, spvm_state_t state)
 {
@@ -564,7 +566,7 @@ void spvm_execute_OpVectorInsertDynamic(spvm_word word_count, spvm_state_t state
 
 	state->results[id].type = spvm_result_type_constant;
 	spvm_result_allocate_typed_value(&state->results[id], state->results, res_type);
-	memcpy(state->results[id].members, state->results[vector].members, state->results[id].member_count * sizeof(spvm_member));  // TODO: spvm_member_copy()
+	spvm_member_memcpy(state->results[id].members, state->results[vector].members, state->results[id].member_count);
 	state->results[id].members[index].value.u64 = state->results[comp].members[0].value.u64;
 }
 void spvm_execute_OpVectorShuffle(spvm_word word_count, spvm_state_t state)
@@ -613,14 +615,12 @@ void spvm_execute_OpCompositeExtract(spvm_word word_count, spvm_state_t state)
 	state->results[id].type = spvm_result_type_access_chain;
 	state->results[id].pointer = var_type;
 
-	spvm_word index_id = SPVM_READ_WORD(state->code_current);
-	spvm_word index = state->results[index_id].members[0].value.s;
+	spvm_word index = SPVM_READ_WORD(state->code_current);
 
 	spvm_member_t result = state->results[value_id].members + index;
 
 	while (index_count) {
-		index_id = SPVM_READ_WORD(state->code_current);
-		index = state->results[index_id].members[0].value.s;
+		index = SPVM_READ_WORD(state->code_current);
 
 		result = result->members + index;
 
@@ -628,7 +628,33 @@ void spvm_execute_OpCompositeExtract(spvm_word word_count, spvm_state_t state)
 	}
 
 	spvm_result_allocate_typed_value(&state->results[id], state->results, var_type);
-	memcpy(state->results[id].members, result, sizeof(spvm_member)); // TODO: spvm_member_copy()
+	spvm_member_memcpy(state->results[id].members, result, 1);
+}
+void spvm_execute_OpCopyObject(spvm_word word_count, spvm_state_t state)
+{
+	spvm_word res_type = SPVM_READ_WORD(state->code_current);
+	spvm_word id = SPVM_READ_WORD(state->code_current);
+	spvm_word op = SPVM_READ_WORD(state->code_current);
+
+	state->results[id].type = spvm_result_type_constant;
+	spvm_result_allocate_typed_value(&state->results[id], state->results, res_type);
+
+	spvm_member_memcpy(state->results[id].members, state->results[op].members, state->results[op].member_count);
+}
+void spvm_execute_OpTranspose(spvm_word word_count, spvm_state_t state)
+{
+	spvm_word res_type = SPVM_READ_WORD(state->code_current);
+	spvm_word id = SPVM_READ_WORD(state->code_current);
+	spvm_word mat = SPVM_READ_WORD(state->code_current);
+
+	state->results[id].type = spvm_result_type_constant;
+	spvm_result_allocate_typed_value(&state->results[id], state->results, res_type);
+
+	spvm_word s1 = state->results[mat].member_count;
+	spvm_word s2 = state->results[mat].members[0].member_count;
+	for (spvm_word i = 0; i < s1; i++)
+		for (spvm_word j = 0; j < s2; ++j)
+			state->results[id].members[j].members[i].value.u64 = state->results[mat].members[i].members[j].value.u64;
 }
 
 /* 3.32.13 Arithmetic Instructions */
@@ -824,6 +850,96 @@ void spvm_execute_OpVectorTimesScalar(spvm_word word_count, spvm_state_t state)
 
 	for (spvm_word i = 0; i < state->results[id].member_count; i++)
 		state->results[id].members[i].value.f = state->results[vec].members[i].value.f * state->results[scalar].members[0].value.f;
+}
+void spvm_execute_OpMatrixTimesScalar(spvm_word word_count, spvm_state_t state)
+{
+	spvm_word res_type = SPVM_READ_WORD(state->code_current);
+	spvm_word id = SPVM_READ_WORD(state->code_current);
+	spvm_word mat = SPVM_READ_WORD(state->code_current);
+	spvm_word scalar = SPVM_READ_WORD(state->code_current);
+
+	state->results[id].type = spvm_result_type_constant;
+	spvm_result_allocate_typed_value(&state->results[id], state->results, res_type);
+
+	spvm_word s1 = state->results[mat].member_count;
+	spvm_word s2 = state->results[mat].members[0].member_count;
+	for (spvm_word i = 0; i < s1; i++)
+		for (spvm_word j = 0; j < s2; j++)
+			state->results[id].members[i].members[j].value.f = state->results[mat].members[i].members[j].value.f * state->results[scalar].members[0].value.f;
+}
+void spvm_execute_OpVectorTimesMatrix(spvm_word word_count, spvm_state_t state)
+{
+	spvm_word res_type = SPVM_READ_WORD(state->code_current);
+	spvm_word id = SPVM_READ_WORD(state->code_current);
+	spvm_word vec = SPVM_READ_WORD(state->code_current);
+	spvm_word mat = SPVM_READ_WORD(state->code_current);
+
+	state->results[id].type = spvm_result_type_constant;
+	spvm_result_allocate_typed_value(&state->results[id], state->results, res_type);
+
+	spvm_word resSize = state->results[id].member_count;
+	spvm_word mySize = state->results[vec].member_count;
+	for (spvm_word i = 0; i < resSize; i++) {
+		float res = 0.0f;
+		
+		for (spvm_word j = 0; j < mySize; j++)
+			res += state->results[mat].members[i].members[j].value.f * state->results[vec].members[j].value.f;
+
+		state->results[id].members[i].value.f = res;
+	}
+}
+void spvm_execute_OpMatrixTimesVector(spvm_word word_count, spvm_state_t state)
+{
+	spvm_word res_type = SPVM_READ_WORD(state->code_current);
+	spvm_word id = SPVM_READ_WORD(state->code_current);
+	spvm_word mat = SPVM_READ_WORD(state->code_current);
+	spvm_word vec = SPVM_READ_WORD(state->code_current);
+
+	state->results[id].type = spvm_result_type_constant;
+	spvm_result_allocate_typed_value(&state->results[id], state->results, res_type);
+
+	spvm_word resSize = state->results[id].member_count;
+	spvm_word mySize = state->results[vec].member_count;
+	for (spvm_word i = 0; i < resSize; i++) {
+		float res = 0.0f;
+
+		for (spvm_word j = 0; j < mySize; j++)
+			res += state->results[mat].members[j].members[i].value.f * state->results[vec].members[j].value.f;
+
+		state->results[id].members[i].value.f = res;
+	}
+}
+void spvm_execute_OpMatrixTimesMatrix(spvm_word word_count, spvm_state_t state)
+{
+	spvm_word res_type = SPVM_READ_WORD(state->code_current);
+	spvm_word id = SPVM_READ_WORD(state->code_current);
+	spvm_word left = SPVM_READ_WORD(state->code_current);
+	spvm_word right = SPVM_READ_WORD(state->code_current);
+
+	state->results[id].type = spvm_result_type_constant;
+	spvm_result_allocate_typed_value(&state->results[id], state->results, res_type);
+
+	spvm_word s1 = state->results[id].member_count;
+	spvm_word s2 = state->results[id].members[0].member_count;
+	for (spvm_word i = 0; i < s1; i++)
+		for (spvm_word j = 0; j < s2; j++)
+			state->results[id].members[i].members[j].value.f = state->results[left].members[i].members[j].value.f * state->results[right].members[i].members[j].value.f;
+}
+void spvm_execute_OpOuterProduct(spvm_word word_count, spvm_state_t state)
+{
+	spvm_word res_type = SPVM_READ_WORD(state->code_current);
+	spvm_word id = SPVM_READ_WORD(state->code_current);
+	spvm_word vec1 = SPVM_READ_WORD(state->code_current);
+	spvm_word vec2 = SPVM_READ_WORD(state->code_current);
+
+	state->results[id].type = spvm_result_type_constant;
+	spvm_result_allocate_typed_value(&state->results[id], state->results, res_type);
+
+	spvm_word s1 = state->results[id].member_count;
+	spvm_word s2 = state->results[id].members[0].member_count;
+	for (spvm_word i = 0; i < s1; i++)
+		for (spvm_word j = 0; j < s2; j++)
+			state->results[id].members[i].members[j].value.f = state->results[vec1].members[i].value.f * state->results[vec2].members[j].value.f;
 }
 void spvm_execute_OpDot(spvm_word word_count, spvm_state_t state)
 {
@@ -1352,6 +1468,8 @@ void spvm_program_create_opcode_table(spvm_program_t prog)
 	prog->opcode_table[SpvOpVectorShuffle] = spvm_execute_OpVectorShuffle;
 	prog->opcode_table[SpvOpCompositeConstruct] = spvm_execute_OpCompositeConstruct;
 	prog->opcode_table[SpvOpCompositeExtract] = spvm_execute_OpCompositeExtract;
+	prog->opcode_table[SpvOpCopyObject] = spvm_execute_OpCopyObject;
+	prog->opcode_table[SpvOpTranspose] = spvm_execute_OpTranspose;
 	
 	prog->opcode_table[SpvOpSNegate] = spvm_execute_OpSNegate;
 	prog->opcode_table[SpvOpFNegate] = spvm_execute_OpFNegate;
@@ -1368,6 +1486,11 @@ void spvm_program_create_opcode_table(spvm_program_t prog)
 	prog->opcode_table[SpvOpSMod] = spvm_execute_OpSMod;
 	prog->opcode_table[SpvOpFMod] = spvm_execute_OpFMod;
 	prog->opcode_table[SpvOpVectorTimesScalar] = spvm_execute_OpVectorTimesScalar;
+	prog->opcode_table[SpvOpMatrixTimesScalar] = spvm_execute_OpMatrixTimesScalar;
+	prog->opcode_table[SpvOpVectorTimesMatrix] = spvm_execute_OpVectorTimesMatrix;
+	prog->opcode_table[SpvOpMatrixTimesVector] = spvm_execute_OpMatrixTimesVector;
+	prog->opcode_table[SpvOpMatrixTimesMatrix] = spvm_execute_OpMatrixTimesMatrix;
+	prog->opcode_table[SpvOpOuterProduct] = spvm_execute_OpOuterProduct;
 	prog->opcode_table[SpvOpDot] = spvm_execute_OpDot;
 
 	prog->opcode_table[SpvOpBitwiseOr] = spvm_execute_OpBitwiseOr;

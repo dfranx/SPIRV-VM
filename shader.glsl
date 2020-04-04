@@ -1,32 +1,15 @@
 #version 450 core
 
-layout(location=0) uniform vec2 uValue;
+layout(location=0) uniform vec4 uValue;
 layout(location=1) uniform int sel;
 
 layout(location=0) out vec4 outColor;
 
-struct InfoObject
-{
-	float Multiplier;
-};
-
-struct Object
-{
-	float Factor;
-	float Delta;
-	InfoObject Info;
-};
-
-float process(Object obj, InfoObject info)
-{
-	return obj.Delta * info.Multiplier;
-}
-
 void main()
 {
-	Object obj;
-	obj.Delta= 0.2f;
-	obj.Factor = 0.4f;
-	obj.Info.Multiplier = 0.5f;
-	outColor = vec4(1.0f, obj.Factor, process(obj, obj.Info), 2.0f);
+	float arr[4];
+	for (int i = 0; i < 4; i++)
+		arr[i] = uValue[i];
+
+	outColor = vec4(arr[0], arr[1], arr[2], arr[3]);
 }

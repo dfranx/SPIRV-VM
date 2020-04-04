@@ -31,7 +31,7 @@ int main()
 	spvm_program_t prog = spvm_program_create(spv, spv_length);
 	spvm_state_t state = spvm_state_create(prog);
 
-	float uValue[2] = { 0.2f, 0.3f };
+	float uValue[4] = { 0.2f, 0.3f, 0.4f, 0.5f };
 	spvm_state_set_value_f(state, "uValue", uValue);
 
 	int sel = 0;

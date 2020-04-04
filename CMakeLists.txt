@@ -9,6 +9,7 @@ src/program.c
 src/types.c
 src/result.c
 src/state.c
+src/value.c
 )
 
 add_executable(SPIRVVM ${SOURCES})

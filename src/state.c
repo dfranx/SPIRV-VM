@@ -87,21 +87,32 @@ spvm_result_t spvm_state_get_result(spvm_state_t state, const spvm_string str)
 
 void spvm_state_set_value_f(spvm_state_t state, const spvm_string name, float* f)
 {
-	for (spvm_word i = 0; i < state->owner->bound; i++)
-		if (state->results[i].name != NULL && strcmp(state->results[i].name, name) == 0) {
-			spvm_member_t mems = state->results[i].members;
-			for (spvm_word j = 0; j < state->results[i].member_count; j++)
+	spvm_result_t var = spvm_state_get_result(state, name);
+
+	if (var != NULL) {
+		spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[var->pointer]);
+		if (type_info->value_type == spvm_value_type_matrix) {
+			for (spvm_word i = 0; i < var->member_count; i++) {
+				spvm_member_t mem = &var->members[i];
+				for (spvm_word j = 0; j < mem->member_count; j++)
+					mem->members[j].value.f = f[i * mem->member_count + j];
+			}
+		} else {
+			spvm_member_t mems = var->members;
+			for (spvm_word j = 0; j < var->member_count; j++)
 				mems[j].value.f = f[j];
 		}
+	}
 }
 void spvm_state_set_value_i(spvm_state_t state, const spvm_string name, int* d)
 {
-	for (spvm_word i = 0; i < state->owner->bound; i++)
-		if (state->results[i].name != NULL && strcmp(state->results[i].name, name) == 0) {
-			spvm_member_t mems = state->results[i].members;
-			for (spvm_word j = 0; j < state->results[i].member_count; j++)
-				mems[j].value.s = d[j];
-		}
+	spvm_result_t var = spvm_state_get_result(state, name);
+
+	if (var != NULL) {
+		spvm_member_t mems = var->members;
+		for (spvm_word j = 0; j < var->member_count; j++)
+			mems[j].value.s = d[j];
+	}
 }
 
 
