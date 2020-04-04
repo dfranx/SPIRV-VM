@@ -40,14 +40,11 @@ spvm_state_t spvm_state_create(spvm_program_t prog)
 
 	return state;
 }
-spvm_word spvm_state_get_value_count(spvm_result_t res_list, spvm_result_t res)
+spvm_result_t spvm_state_get_type_info(spvm_result_t res_list, spvm_result_t res)
 {
 	if (res->value_type == spvm_value_type_pointer)
-		return spvm_state_get_value_count(res_list, &res_list[res->pointer]);
-	else if (res->value_type == spvm_value_type_vector)
-		return res->value_count;
-
-	return 1;
+		return spvm_state_get_type_info(res_list, &res_list[res->pointer]);
+	return res;
 }
 void spvm_state_call_function(spvm_result_t code, spvm_state_t state)
 {
@@ -92,18 +89,18 @@ void spvm_state_set_value_f(spvm_state_t state, const spvm_string name, float* f
 {
 	for (spvm_word i = 0; i < state->owner->bound; i++)
 		if (state->results[i].name != NULL && strcmp(state->results[i].name, name) == 0) {
-			spvm_value* val = state->results[i].value;
-			for (spvm_word j = 0; j < state->results[i].value_count; j++)
-				val[j].f = f[j];
+			spvm_member_t mems = state->results[i].members;
+			for (spvm_word j = 0; j < state->results[i].member_count; j++)
+				mems[j].value.f = f[j];
 		}
 }
 void spvm_state_set_value_i(spvm_state_t state, const spvm_string name, int* d)
 {
 	for (spvm_word i = 0; i < state->owner->bound; i++)
 		if (state->results[i].name != NULL && strcmp(state->results[i].name, name) == 0) {
-			spvm_value* val = state->results[i].value;
-			for (spvm_word j = 0; j < state->results[i].value_count; j++)
-				val[j].i = d[j];
+			spvm_member_t mems = state->results[i].members;
+			for (spvm_word j = 0; j < state->results[i].member_count; j++)
+				mems[j].value.s = d[j];
 		}
 }
 
@@ -131,7 +128,7 @@ void spvm_state_pop_function_stack(spvm_state_t state)
 {
 	if (state->return_id >= 0) {
 		spvm_word store_id = state->function_stack_returns[state->function_stack_current];
-		memcpy(state->results[store_id].value, state->results[state->return_id].value, state->results[store_id].value_count * sizeof(spvm_word));
+		memcpy(state->results[store_id].members, state->results[state->return_id].members, state->results[store_id].member_count * sizeof(spvm_member));
 	}
 
 	state->function_stack_count--;

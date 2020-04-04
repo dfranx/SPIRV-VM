@@ -40,16 +40,12 @@ int main()
 	spvm_source fnMain = spvm_state_get_result(state, "main");
 	spvm_state_call_function(fnMain, state);
 
-	spvm_result_t c = spvm_state_get_result(state, "c");
-	printf("c: %d\n", c->value[0].i);
-
-
 	printf("discarded: %d\n", state->discarded);
 
 	spvm_result_t outColor = spvm_state_get_result(state, "outColor");
 	printf("outColor = ");
-	for (int i = 0; i < outColor->value_count; i++)
-		printf("%.2f ", outColor->value[i].f);
+	for (int i = 0; i < outColor->member_count; i++)
+		printf("%.2f ", outColor->members[i].value.f);
 	printf("\n");
 
 	spvm_program_delete(prog);

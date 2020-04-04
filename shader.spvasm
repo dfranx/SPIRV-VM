@@ -1,122 +1,92 @@
 ; SPIR-V
-; Version: 1.5
+; Version: 1.4
 ; Generator: Google Shaderc over Glslang; 8
-; Bound: 77
+; Bound: 54
 ; Schema: 0
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
-               OpEntryPoint Fragment %main "main" %uValue %sel %outColor
+               OpEntryPoint Fragment %main "main" %outColor %uValue %sel
                OpExecutionMode %main OriginLowerLeft
                OpSource GLSL 450
                OpSourceExtension "GL_GOOGLE_cpp_style_line_directive"
                OpSourceExtension "GL_GOOGLE_include_directive"
                OpName %main "main"
-               OpName %sum_f1_f1_ "sum(f1;f1;"
-               OpName %x "x"
-               OpName %y "y"
-               OpName %a "a"
-               OpName %uValue "uValue"
+               OpName %InfoObject "InfoObject"
+               OpMemberName %InfoObject 0 "Multiplier"
+               OpName %Object "Object"
+               OpMemberName %Object 0 "Factor"
+               OpMemberName %Object 1 "Delta"
+               OpMemberName %Object 2 "Info"
+               OpName %process_struct_Object_f1_f1_struct_InfoObject_f111_struct_InfoObject_f11_ "process(struct-Object-f1-f1-struct-InfoObject-f111;struct-InfoObject-f11;"
+               OpName %obj "obj"
+               OpName %info "info"
+               OpName %obj_0 "obj"
+               OpName %outColor "outColor"
                OpName %param "param"
                OpName %param_0 "param"
-               OpName %b "b"
-               OpName %c "c"
+               OpName %uValue "uValue"
                OpName %sel "sel"
-               OpName %outColor "outColor"
-               OpName %param_1 "param"
-               OpName %param_2 "param"
+               OpDecorate %outColor Location 0
                OpDecorate %uValue Location 0
                OpDecorate %sel Location 1
-               OpDecorate %outColor Location 0
        %void = OpTypeVoid
           %3 = OpTypeFunction %void
       %float = OpTypeFloat 32
-%_ptr_Function_float = OpTypePointer Function %float
-          %8 = OpTypeFunction %float %_ptr_Function_float %_ptr_Function_float
-    %v2float = OpTypeVector %float 2
-%_ptr_UniformConstant_v2float = OpTypePointer UniformConstant %v2float
-     %uValue = OpVariable %_ptr_UniformConstant_v2float UniformConstant
-       %uint = OpTypeInt 32 0
-     %uint_0 = OpConstant %uint 0
-%_ptr_UniformConstant_float = OpTypePointer UniformConstant %float
-     %uint_1 = OpConstant %uint 1
+ %InfoObject = OpTypeStruct %float
+     %Object = OpTypeStruct %float %float %InfoObject
+%_ptr_Function_Object = OpTypePointer Function %Object
+%_ptr_Function_InfoObject = OpTypePointer Function %InfoObject
+         %11 = OpTypeFunction %float %_ptr_Function_Object %_ptr_Function_InfoObject
         %int = OpTypeInt 32 1
-%_ptr_Function_int = OpTypePointer Function %int
-      %int_3 = OpConstant %int 3
-%_ptr_UniformConstant_int = OpTypePointer UniformConstant %int
-        %sel = OpVariable %_ptr_UniformConstant_int UniformConstant
-      %int_4 = OpConstant %int 4
-      %int_5 = OpConstant %int 5
+      %int_1 = OpConstant %int 1
+%_ptr_Function_float = OpTypePointer Function %float
+      %int_0 = OpConstant %int 0
+%float_0_200000003 = OpConstant %float 0.200000003
+%float_0_400000006 = OpConstant %float 0.400000006
       %int_2 = OpConstant %int 2
-     %int_12 = OpConstant %int 12
-       %bool = OpTypeBool
-    %float_2 = OpConstant %float 2
+  %float_0_5 = OpConstant %float 0.5
     %v4float = OpTypeVector %float 4
 %_ptr_Output_v4float = OpTypePointer Output %v4float
    %outColor = OpVariable %_ptr_Output_v4float Output
-%float_0_200000003 = OpConstant %float 0.200000003
-%float_0_800000012 = OpConstant %float 0.800000012
     %float_1 = OpConstant %float 1
+    %float_2 = OpConstant %float 2
+    %v2float = OpTypeVector %float 2
+%_ptr_UniformConstant_v2float = OpTypePointer UniformConstant %v2float
+     %uValue = OpVariable %_ptr_UniformConstant_v2float UniformConstant
+%_ptr_UniformConstant_int = OpTypePointer UniformConstant %int
+        %sel = OpVariable %_ptr_UniformConstant_int UniformConstant
        %main = OpFunction %void None %3
           %5 = OpLabel
-          %a = OpVariable %_ptr_Function_float Function
-      %param = OpVariable %_ptr_Function_float Function
-    %param_0 = OpVariable %_ptr_Function_float Function
-          %b = OpVariable %_ptr_Function_int Function
-          %c = OpVariable %_ptr_Function_int Function
-    %param_1 = OpVariable %_ptr_Function_float Function
-    %param_2 = OpVariable %_ptr_Function_float Function
-         %26 = OpAccessChain %_ptr_UniformConstant_float %uValue %uint_0
-         %27 = OpLoad %float %26
-               OpStore %param %27
-         %30 = OpAccessChain %_ptr_UniformConstant_float %uValue %uint_1
-         %31 = OpLoad %float %30
-               OpStore %param_0 %31
-         %32 = OpFunctionCall %float %sum_f1_f1_ %param %param_0
-               OpStore %a %32
-               OpStore %b %int_3
-               OpStore %c %int_3
-         %40 = OpLoad %int %sel
-               OpSelectionMerge %45 None
-               OpSwitch %40 %44 0 %41 1 %42 2 %43
-         %44 = OpLabel
-               OpStore %c %int_2
-               OpBranch %45
-         %41 = OpLabel
-               OpStore %c %int_4
-               OpBranch %45
-         %42 = OpLabel
-               OpStore %c %int_5
-               OpBranch %45
-         %43 = OpLabel
-               OpKill
-         %45 = OpLabel
-         %55 = OpLoad %int %b
-         %56 = OpLoad %int %c
-         %57 = OpIMul %int %55 %56
-         %60 = OpSLessThanEqual %bool %57 %int_12
-               OpSelectionMerge %62 None
-               OpBranchConditional %60 %61 %62
-         %61 = OpLabel
-         %64 = OpLoad %float %a
-         %65 = OpFMul %float %64 %float_2
-               OpStore %a %65
-               OpBranch %62
-         %62 = OpLabel
-         %69 = OpLoad %float %a
-               OpStore %param_1 %float_0_200000003
-               OpStore %param_2 %float_0_200000003
-         %73 = OpFunctionCall %float %sum_f1_f1_ %param_1 %param_2
-         %76 = OpCompositeConstruct %v4float %69 %73 %float_0_800000012 %float_1
-               OpStore %outColor %76
+      %obj_0 = OpVariable %_ptr_Function_Object Function
+      %param = OpVariable %_ptr_Function_Object Function
+    %param_0 = OpVariable %_ptr_Function_InfoObject Function
+         %29 = OpAccessChain %_ptr_Function_float %obj_0 %int_1
+               OpStore %29 %float_0_200000003
+         %31 = OpAccessChain %_ptr_Function_float %obj_0 %int_0
+               OpStore %31 %float_0_400000006
+         %34 = OpAccessChain %_ptr_Function_float %obj_0 %int_2 %int_0
+               OpStore %34 %float_0_5
+         %39 = OpAccessChain %_ptr_Function_float %obj_0 %int_0
+         %40 = OpLoad %float %39
+         %42 = OpLoad %Object %obj_0
+               OpStore %param %42
+         %44 = OpAccessChain %_ptr_Function_InfoObject %obj_0 %int_2
+         %45 = OpLoad %InfoObject %44
+               OpStore %param_0 %45
+         %46 = OpFunctionCall %float %process_struct_Object_f1_f1_struct_InfoObject_f111_struct_InfoObject_f11_ %param %param_0
+         %48 = OpCompositeConstruct %v4float %float_1 %40 %46 %float_2
+               OpStore %outColor %48
                OpReturn
                OpFunctionEnd
- %sum_f1_f1_ = OpFunction %float None %8
-          %x = OpFunctionParameter %_ptr_Function_float
-          %y = OpFunctionParameter %_ptr_Function_float
-         %12 = OpLabel
-         %13 = OpLoad %float %x
-         %14 = OpLoad %float %y
-         %15 = OpFAdd %float %13 %14
-               OpReturnValue %15
+%process_struct_Object_f1_f1_struct_InfoObject_f111_struct_InfoObject_f11_ = OpFunction %float None %11
+        %obj = OpFunctionParameter %_ptr_Function_Object
+       %info = OpFunctionParameter %_ptr_Function_InfoObject
+         %15 = OpLabel
+         %19 = OpAccessChain %_ptr_Function_float %obj %int_1
+         %20 = OpLoad %float %19
+         %22 = OpAccessChain %_ptr_Function_float %info %int_0
+         %23 = OpLoad %float %22
+         %24 = OpFMul %float %20 %23
+               OpReturnValue %24
                OpFunctionEnd

@@ -30,7 +30,7 @@ typedef struct {
 } spvm_state;
 typedef spvm_state* spvm_state_t;
 
-spvm_word spvm_state_get_value_count(spvm_result_t res_list, spvm_result_t res);
+spvm_result_t spvm_state_get_type_info(spvm_result_t res_list, spvm_result_t res);
 
 spvm_state_t spvm_state_create(spvm_program_t prog);
 void spvm_state_call_function(spvm_result_t code, spvm_state_t state);

@@ -1,6 +1,8 @@
 #ifndef __SPIRV_VM_VALUE_H__
 #define __SPIRV_VM_VALUE_H__
 
+#include <spvm/types.h>
+
 enum spvm_value_type
 {
 	spvm_value_type_void,
@@ -13,14 +15,23 @@ enum spvm_value_type
 	spvm_value_type_struct,
 	spvm_value_type_pointer
 };
-typedef union
-{
-	float f;
-	double d;
-	int i;
-	unsigned int ui;
-	unsigned long long ui64;
-	char b;
-} spvm_value;
+
+typedef struct spvm_member {
+	spvm_word type;
+
+	union spvm_value
+	{
+		float f;
+		double d;
+		int s;
+		unsigned int u;
+		unsigned long long u64;
+		char b;
+	} value;
+	
+	spvm_word member_count;
+	struct spvm_member* members;
+} spvm_member;
+typedef spvm_member* spvm_member_t;
 
 #endif // __SPIRV_VM_VALUE_H__
