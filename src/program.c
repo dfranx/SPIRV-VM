@@ -1,13 +1,15 @@
 #include <spvm/program.h>
 
 
-spvm_program_t spvm_program_create(spvm_source spv, size_t spv_length)
+spvm_program_t spvm_program_create(spvm_context_t ctx, spvm_source spv, size_t spv_length)
 {
 	spvm_word magic = SPVM_READ_WORD(spv);
 	if (magic != SpvMagicNumber)
 		return NULL;
 
 	spvm_program_t prog = (spvm_program_t)calloc(1, sizeof(spvm_program));
+
+	prog->context = ctx;
 
 	spvm_word version = SPVM_READ_WORD(spv);
 	prog->major_version = (version & 0x00FF0000) >> 16;
@@ -19,13 +21,10 @@ spvm_program_t spvm_program_create(spvm_source spv, size_t spv_length)
 
 	prog->bound = SPVM_READ_WORD(spv);
 
-	spv++; // skip [4] -> 0
+	SPVM_SKIP_WORD(spv); // skip [4] -> 0
 
 	prog->code_length = spv_length - 5;
 	prog->code = spv;
-
-	// opcodes
-	spvm_program_create_opcode_table(prog);
 
 	return prog;
 }

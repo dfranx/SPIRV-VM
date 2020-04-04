@@ -1,8 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <spvm/context.h>
 #include <spvm/state.h>
 
+#include <time.h>
 
 spvm_source load_source(const char* fname, size_t* src_size) {
 	FILE* f = fopen(fname, "rb");
@@ -26,15 +28,17 @@ spvm_source load_source(const char* fname, size_t* src_size) {
 }
 int main()
 {
+	spvm_context_t ctx = spvm_context_initialize();
+
 	size_t spv_length = 0;
 	spvm_source spv = load_source("shader.spv", &spv_length);
-	spvm_program_t prog = spvm_program_create(spv, spv_length);
+	spvm_program_t prog = spvm_program_create(ctx, spv, spv_length);
 	spvm_state_t state = spvm_state_create(prog);
 
 	float uValue[4] = { 0.2f, 0.3f, 0.4f, 0.5f };
 	spvm_state_set_value_f(state, "uValue", uValue);
 
-	int sel = 0;
+	int sel = 1;
 	spvm_state_set_value_i(state, "sel", &sel);
 
 	spvm_source fnMain = spvm_state_get_result(state, "main");
@@ -50,6 +54,8 @@ int main()
 
 	spvm_program_delete(prog);
 	free(spv);
+
+	spvm_context_deinitialize(ctx);
 
 	return 0;
 }

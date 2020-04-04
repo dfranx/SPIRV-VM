@@ -3,7 +3,7 @@
 
 #include <spvm/types.h>
 #include <spvm/spirv.h>
-#include <spvm/opcode.h>
+#include <spvm/context.h>
 
 typedef struct
 {
@@ -14,6 +14,8 @@ typedef struct
 } spvm_entry_point;
 
 typedef struct {
+	spvm_context_t context;
+
 	spvm_byte major_version;
 	spvm_byte minor_version;
 
@@ -24,8 +26,6 @@ typedef struct {
 
 	size_t code_length;
 	spvm_source code;
-
-	spvm_opcode_func* opcode_table;
 
 	SpvSourceLanguage language;
 	spvm_word language_version;
@@ -47,7 +47,7 @@ typedef struct {
 } spvm_program;
 typedef spvm_program* spvm_program_t;
 
-spvm_program_t spvm_program_create(spvm_source spv, size_t spv_length);
+spvm_program_t spvm_program_create(spvm_context_t ctx, spvm_source spv, size_t spv_length);
 spvm_string spvm_program_add_extension(spvm_program_t prog, spvm_word length);
 spvm_string spvm_program_add_import(spvm_program_t prog, spvm_word length);
 spvm_entry_point* spvm_program_create_entry_point(spvm_program_t prog);

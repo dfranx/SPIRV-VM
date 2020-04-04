@@ -9,7 +9,6 @@ spvm_state_t spvm_state_create(spvm_program_t prog)
 	state->owner = prog;
 	state->code_current = prog->code;
 	state->results = (spvm_result*)calloc(prog->bound + 1, sizeof(spvm_result));
-	state->function_reached_label = 0;
 	state->current_file = NULL;
 	state->current_line = -1;
 	state->current_column = -1;
@@ -17,8 +16,7 @@ spvm_state_t spvm_state_create(spvm_program_t prog)
 	state->function_stack_count = 0;
 	state->function_stack_current = 0;
 	state->function_stack = NULL;
-
-	state->parsing = 1;
+	state->context = prog->context;
 
 	for (size_t i = 0; i < prog->code_length; i++) {
 		spvm_word opcode_data = SPVM_READ_WORD(state->code_current);
@@ -26,17 +24,12 @@ spvm_state_t spvm_state_create(spvm_program_t prog)
 		spvm_word opcode = (opcode_data & SpvOpCodeMask);
 		spvm_source cur_code = state->code_current;
 
-		if (opcode <= 256 && prog->opcode_table[opcode] != 0 &&
-			(!state->function_reached_label || (state->function_reached_label && opcode == SpvOpFunctionEnd) || opcode == SpvOpLabel))
-		{
-			prog->opcode_table[opcode](word_count, state);
-		}
+		if (opcode <= SPVM_OPCODE_TABLE_LENGTH && state->context->opcode_setup[opcode] != 0)
+			state->context->opcode_setup[opcode](word_count, state);
 
 		state->code_current = (cur_code + word_count);
 		i += word_count;
 	}
-
-	state->parsing = 0;
 
 	return state;
 }
@@ -60,16 +53,17 @@ void spvm_state_call_function(spvm_result_t code, spvm_state_t state)
 	state->discarded = 0;
 
 	spvm_program_t prog = state->owner;
+	spvm_source cur_code = state->code_current;
 
 	while (state->code_current)
 	{
 		spvm_word opcode_data = SPVM_READ_WORD(state->code_current);
 		spvm_word word_count = ((opcode_data & (~SpvOpCodeMask)) >> SpvWordCountShift) - 1;
 		SpvOp opcode = (opcode_data & SpvOpCodeMask);
-		spvm_source cur_code = state->code_current;
+		cur_code = state->code_current;
 
-		if (opcode <= 410 && prog->opcode_table[opcode] != 0)
-			prog->opcode_table[opcode](word_count, state);
+		if (opcode <= SPVM_OPCODE_TABLE_LENGTH && state->context->opcode_execute[opcode] != 0)
+			state->context->opcode_execute[opcode](word_count, state);
 
 		if (!state->did_jump)
 			state->code_current = (cur_code + word_count);
@@ -139,7 +133,7 @@ void spvm_state_pop_function_stack(spvm_state_t state)
 {
 	if (state->return_id >= 0) {
 		spvm_word store_id = state->function_stack_returns[state->function_stack_current];
-		memcpy(state->results[store_id].members, state->results[state->return_id].members, state->results[store_id].member_count * sizeof(spvm_member));
+		spvm_member_memcpy(state->results[store_id].members, state->results[state->return_id].members, state->results[store_id].member_count);
 	}
 
 	state->function_stack_count--;

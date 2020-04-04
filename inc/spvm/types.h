@@ -10,6 +10,7 @@ typedef char* spvm_string;
 struct spvm_state;
 
 #define SPVM_READ_WORD(spv) *((spv)++)
+#define SPVM_SKIP_WORD(spv) ((spv)++)
 
 void spvm_string_read(spvm_source spv, spvm_string str, spvm_word length);
 spvm_string spvm_string_read_all(spvm_source spv, spvm_word* length);

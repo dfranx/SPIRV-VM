@@ -5,11 +5,10 @@
 #include <spvm/result.h>
 
 typedef struct {
+	spvm_context_t context;
 	spvm_program_t owner;
 	spvm_source code_current; // current position in the code
 	spvm_result* results;
-	char function_reached_label;
-	char parsing;
 
 	spvm_byte did_jump;
 	spvm_byte discarded;
