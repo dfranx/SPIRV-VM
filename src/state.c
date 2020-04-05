@@ -43,10 +43,15 @@ void spvm_state_call_function(spvm_result_t code, spvm_state_t state)
 {
 	state->code_current = code->source_location;
 	state->current_function = code;
-	state->function_stack_count = 1;
+
+	if (state->function_stack_count == 0) {
+		state->function_stack_count = 10;
+		state->function_stack = (spvm_source*)malloc(state->function_stack_count * sizeof(spvm_source));
+		state->function_stack_info = (spvm_result_t*)malloc(state->function_stack_count * sizeof(spvm_result_t));
+		state->function_stack_returns = (spvm_word*)malloc(state->function_stack_count * sizeof(spvm_word));
+	}
+	
 	state->function_stack_current = 0;
-	state->function_stack = (spvm_source*)realloc(state->function_stack, state->function_stack_count * sizeof(spvm_source));
-	state->function_stack_info = (spvm_result_t*)realloc(state->function_stack_info, state->function_stack_count * sizeof(spvm_result_t));
 	state->function_stack[0] = code->source_location;
 	state->function_stack_info[0] = code;
 	state->did_jump = 0;
@@ -114,12 +119,15 @@ void spvm_state_push_function_stack(spvm_state_t state, spvm_result_t func, spvm
 {
 	state->function_stack[state->function_stack_current] = state->code_current;
 
-	state->function_stack_current = state->function_stack_count;
-	state->function_stack_count++;
-	state->function_stack = (spvm_source*)realloc(state->function_stack, state->function_stack_count * sizeof(spvm_source));
-	state->function_stack_info = (spvm_result_t*)realloc(state->function_stack_info, state->function_stack_count * sizeof(spvm_result_t));
-	state->function_stack_returns = (spvm_word*)realloc(state->function_stack_returns, state->function_stack_count * sizeof(spvm_word));
-	
+	state->function_stack_current++;
+
+	if (state->function_stack_current >= state->function_stack_count) {
+		state->function_stack_count += 10;
+		state->function_stack = (spvm_source*)realloc(state->function_stack, state->function_stack_count * sizeof(spvm_source));
+		state->function_stack_info = (spvm_result_t*)realloc(state->function_stack_info, state->function_stack_count * sizeof(spvm_result_t));
+		state->function_stack_returns = (spvm_word*)realloc(state->function_stack_returns, state->function_stack_count * sizeof(spvm_word));
+	}
+
 	state->function_stack[state->function_stack_current] = func->source_location;
 	state->function_stack_info[state->function_stack_current] = func;
 	state->function_stack_returns[state->function_stack_current] = func_res_id;
@@ -136,7 +144,6 @@ void spvm_state_pop_function_stack(spvm_state_t state)
 		spvm_member_memcpy(state->results[store_id].members, state->results[state->return_id].members, state->results[store_id].member_count);
 	}
 
-	state->function_stack_count--;
 	state->function_stack_current--;
 
 	if (state->function_stack_current < 0) {
@@ -148,4 +155,41 @@ void spvm_state_pop_function_stack(spvm_state_t state)
 	}
 
 	state->did_jump = 1;
+}
+void spvm_state_delete(spvm_state_t state)
+{
+	for (spvm_word i = 0; i < state->owner->bound; i++) {
+		spvm_result_t res = &state->results[i];
+
+		// name
+		if (res->name != NULL)
+			free(res->name);
+
+		// member names
+		for (spvm_word j = 0; j < res->member_name_count; j++)
+			free(res->member_name[j]);
+		if (res->member_name_count)
+			free(res->member_name);
+
+		// member/parameter types
+		if (res->value_type == spvm_value_type_struct || res->type == spvm_result_type_function_type)
+			free(res->param_count);
+
+		// decorations
+		if (res->decoration_count)
+			free(res->decorations);
+
+		// constants
+		if (res->type == spvm_result_type_constant || res->type == spvm_result_type_variable)
+			spvm_member_free(res->members, res->member_count);
+	}
+
+	if (state->function_stack_count) {
+		free(state->function_stack);
+		free(state->function_stack_info);
+		free(state->function_stack_returns);
+	}
+
+	free(state->results);
+	free(state);
 }

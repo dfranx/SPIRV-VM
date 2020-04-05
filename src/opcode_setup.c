@@ -91,6 +91,8 @@ void spvm_setup_OpEntryPoint(spvm_word word_count, spvm_state_t state)
 	state->code_current += name_length;
 
 	spvm_word interface_count = word_count - name_length - 2;
+	entry->globals_count = interface_count;
+	
 	if (interface_count) {
 		entry->globals = (spvm_word*)calloc(interface_count, sizeof(spvm_word));
 		spvm_word interface_index = 0;
@@ -303,12 +305,14 @@ void spvm_setup_OpFunctionParameter(spvm_word word_count, spvm_state_t state)
 	spvm_word var_type = SPVM_READ_WORD(state->code_current);
 	spvm_word id = SPVM_READ_WORD(state->code_current);
 
-	state->results[id].type = spvm_result_type_variable;
+	state->results[id].type = spvm_result_type_function_parameter;
 	state->results[id].storage_class = SPVM_READ_WORD(state->code_current);
 	state->results[id].parameter_owner = state->current_function;
 
-	// TODO: parameteres are pointers == memory leak here
-	spvm_result_allocate_typed_value(&state->results[id], state->results, var_type);
+	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[var_type]);
+
+	state->results[id].pointer = var_type;
+	state->results[id].member_count = type_info->member_count;
 }
 void spvm_setup_OpFunctionEnd(spvm_word word_count, spvm_state_t state)
 {

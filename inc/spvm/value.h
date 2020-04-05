@@ -34,6 +34,7 @@ typedef struct spvm_member {
 } spvm_member;
 typedef spvm_member* spvm_member_t;
 
+void spvm_member_free(spvm_member_t source, spvm_word value_count);
 void spvm_member_memcpy(spvm_member_t target, spvm_member_t source, spvm_word value_count);
 
 #endif // __SPIRV_VM_VALUE_H__

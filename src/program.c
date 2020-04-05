@@ -56,5 +56,30 @@ void spvm_program_delete(spvm_program_t prog)
 {
 	if (prog == NULL) return;
 
+	// entry points
+	for (spvm_word i = 0; i < prog->entry_point_count; i++) {
+		if (prog->entry_points[i].globals_count > 0)
+			free(prog->entry_points[i].globals);
+		free(prog->entry_points[i].name);
+	}
+	if (prog->entry_point_count)
+		free(prog->entry_points);
+
+	// extensions
+	for (spvm_word i = 0; i < prog->extension_count; i++)
+		free(prog->extensions[i]);
+	if (prog->extension_count)
+		free(prog->extensions);
+
+	// imports
+	for (spvm_word i = 0; i < prog->import_count; i++)
+		free(prog->imports[i]);
+	if (prog->import_count)
+		free(prog->imports);
+
+	// capabilities
+	if (prog->capability_count)
+		free(prog->capabilities);
+
 	free(prog);
 }

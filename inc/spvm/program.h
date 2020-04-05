@@ -10,6 +10,7 @@ typedef struct
 	SpvExecutionModel exec_model;
 	spvm_word id;
 	spvm_string name;
+	spvm_word globals_count;
 	spvm_word* globals; // interface <id>
 } spvm_entry_point;
 

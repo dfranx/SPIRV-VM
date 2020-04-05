@@ -38,5 +38,6 @@ void spvm_state_set_value_f(spvm_state_t state, const spvm_string name, float* f
 void spvm_state_set_value_i(spvm_state_t state, const spvm_string name, int* f);
 void spvm_state_push_function_stack(spvm_state_t state, spvm_result_t func, spvm_word func_res_id);
 void spvm_state_pop_function_stack(spvm_state_t state);
+void spvm_state_delete(spvm_state_t state);
 
 #endif // __SPIRV_VM_STATE_H__

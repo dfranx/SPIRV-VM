@@ -8,6 +8,7 @@
 
 /*
 1. executing shaders multiple times & memory leaks
+1.5. remove param_count (use member_count)
 2. textures
 3. extensions
 */

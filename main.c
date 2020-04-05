@@ -50,6 +50,7 @@ int main()
 		printf("%.2f ", outColor->members[i].value.f);
 	printf("\n");
 
+	spvm_state_delete(state);
 	spvm_program_delete(prog);
 	free(spv);
 

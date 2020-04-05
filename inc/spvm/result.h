@@ -15,6 +15,7 @@ enum spvm_result_type {
 	spvm_result_type_constant,
 	spvm_result_type_function,
 	spvm_result_type_access_chain,
+	spvm_result_type_function_parameter,
 	spvm_result_type_label
 };
 typedef struct {

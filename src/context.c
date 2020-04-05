@@ -10,5 +10,7 @@ spvm_context_t spvm_context_initialize()
 }
 void spvm_context_deinitialize(spvm_context_t ctx)
 {
-
+	free(ctx->opcode_execute);
+	free(ctx->opcode_setup);
+	free(ctx);
 }
