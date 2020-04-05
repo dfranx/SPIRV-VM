@@ -59,6 +59,7 @@ typedef struct spvm_result {
 	char value_type;
 	spvm_word value_bitmask;
 	char value_sign;
+	SpvDim image_dimension;
 } spvm_result;
 typedef spvm_result* spvm_result_t;
 

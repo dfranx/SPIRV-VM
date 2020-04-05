@@ -39,6 +39,19 @@ int main()
 	int sel = 1;
 	spvm_state_set_value_i(state, "sel", &sel);
 
+	float noise2d_data[] = {
+		0.4f, 0.4f, 0.4f, 0.4f,
+		0.5f, 0.5f, 0.5f, 0.5f,
+		0.6f, 0.6f, 0.6f, 0.6f,
+		0.7f, 0.7f, 0.7f, 0.7f,
+	};
+
+	spvm_image noise2d;
+	spvm_image_create(&noise2d, noise2d_data, 2, 2, 1);
+
+	spvm_result_t noise2d_container = spvm_state_get_result(state, "Noise2d");
+	noise2d_container->members[0].image_data = &noise2d;
+
 	spvm_source fnMain = spvm_state_get_result(state, "main");
 	spvm_state_call_function(fnMain, state);
 

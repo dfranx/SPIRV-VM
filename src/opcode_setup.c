@@ -160,6 +160,22 @@ void spvm_setup_OpTypeMatrix(spvm_word word_count, spvm_state_t state)
 	state->results[store_id].pointer = SPVM_READ_WORD(state->code_current);
 	state->results[store_id].member_count = SPVM_READ_WORD(state->code_current);
 }
+void spvm_setup_OpTypeImage(spvm_word word_count, spvm_state_t state)
+{
+	spvm_word id = SPVM_READ_WORD(state->code_current);
+	state->results[id].type = spvm_result_type_type;
+	state->results[id].value_type = spvm_value_type_image;
+	state->results[id].pointer = SPVM_READ_WORD(state->code_current);
+	state->results[id].image_dimension = SPVM_READ_WORD(state->code_current);
+	state->results[id].member_count = 1;
+}
+void spvm_setup_OpTypeSampledImage(spvm_word word_count, spvm_state_t state)
+{
+	spvm_word id = SPVM_READ_WORD(state->code_current);
+	state->results[id].type = spvm_result_type_type;
+	state->results[id].value_type = spvm_value_type_sampled_image;
+	state->results[id].pointer = SPVM_READ_WORD(state->code_current);
+}
 void spvm_setup_OpTypeArray(spvm_word word_count, spvm_state_t state)
 {
 	spvm_word store_id = SPVM_READ_WORD(state->code_current);
@@ -376,6 +392,8 @@ void _spvm_context_create_setup_table(spvm_context_t ctx)
 	ctx->opcode_setup[SpvOpTypeFloat] = spvm_setup_OpTypeFloat;
 	ctx->opcode_setup[SpvOpTypeVector] = spvm_setup_OpTypeVector;
 	ctx->opcode_setup[SpvOpTypeMatrix] = spvm_setup_OpTypeMatrix;
+	ctx->opcode_setup[SpvOpTypeImage] = spvm_setup_OpTypeImage;
+	ctx->opcode_setup[SpvOpTypeSampledImage] = spvm_setup_OpTypeSampledImage;
 	ctx->opcode_setup[SpvOpTypeArray] = spvm_setup_OpTypeArray;
 	ctx->opcode_setup[SpvOpTypeStruct] = spvm_setup_OpTypeStruct;
 	ctx->opcode_setup[SpvOpTypePointer] = spvm_setup_OpTypePointer;
@@ -463,6 +481,8 @@ void _spvm_context_create_setup_table(spvm_context_t ctx)
 	ctx->opcode_setup[SpvOpFOrdGreaterThan] = spvm_setup_constant;
 	ctx->opcode_setup[SpvOpFOrdLessThanEqual] = spvm_setup_constant;
 	ctx->opcode_setup[SpvOpFOrdGreaterThanEqual] = spvm_setup_constant;
+
+	ctx->opcode_setup[SpvOpImageSampleImplicitLod] = spvm_setup_constant;
 
 	ctx->opcode_setup[SpvOpLabel] = spvm_setup_OpLabel;
 }

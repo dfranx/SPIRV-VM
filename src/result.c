@@ -92,7 +92,7 @@ void spvm_result_allocate_value(spvm_result_t val, spvm_word count)
 void spvm_result_allocate_typed_value(spvm_result_t val, spvm_result* results, spvm_word type)
 {
 	spvm_result_t type_info = spvm_state_get_type_info(results, &results[type]);
-
+	
 	spvm_word mem_count = type_info->member_count;
 	if (mem_count == 0)
 		mem_count = 1;

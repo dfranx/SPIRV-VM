@@ -6,6 +6,7 @@ set(SOURCES
 main.c
 src/program.c
 src/types.c
+src/image.c
 src/result.c
 src/state.c
 src/value.c

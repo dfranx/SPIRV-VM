@@ -5,12 +5,9 @@ layout(location=1) uniform int sel;
 
 layout(location=0) out vec4 outColor;
 
+uniform sampler2D Noise2d;
+
 void main()
 {
-	double a = 0.5;
-	double b = 1.5;
-	double c = a*b;
-	if (c > 0.75)
-		c *= 0.5;
-	outColor = vec4(c);
+	outColor = texture(Noise2d, vec2(1, 1));
 }

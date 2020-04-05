@@ -2,13 +2,13 @@
 #include <spvm/opcode.h>
 #include <spvm/state.h>
 #include <spvm/spirv.h>
+#include <spvm/image.h>
 #include <string.h>
 #include <math.h>
 
 /*
-1.5. remove param_count (use member_count)
-2. textures
-3. extensions
+1. textures
+2. extensions
 */
 
 /* opcodes */
@@ -160,7 +160,27 @@ void spvm_execute_OpReturnValue(spvm_word word_count, spvm_state_t state)
 }
 
 /* 3.32.10 Image Instruction */
-// :(
+void spvm_execute_OpImageSampleImplicitLod(spvm_word word_count, spvm_state_t state)
+{
+	spvm_word res_type = SPVM_READ_WORD(state->code_current);
+	spvm_word id = SPVM_READ_WORD(state->code_current);
+	spvm_word image_id = SPVM_READ_WORD(state->code_current);
+	spvm_word coord_id = SPVM_READ_WORD(state->code_current);
+
+	spvm_result_t coord = &state->results[coord_id];
+
+	spvm_result_t image_container = &state->results[image_id];
+	spvm_image_t image = image_container->members[0].image_data;
+
+	float stu[3] = { 0.0f, 0.0f, 0.0f };
+	for (spvm_word i = 0; i < coord->member_count; i++)
+		stu[i] = coord->members[i].value.f;
+
+	float* px = spvm_image_sample(image, stu[0], stu[1], stu[2]);
+
+	for (spvm_word i = 0; i < state->results[id].member_count; i++)
+		state->results[id].members[i].value.f = *(px + i);
+}
 
 /* 3.32.11 Conversion Instructions */
 void spvm_execute_OpConvertFToU(spvm_word word_count, spvm_state_t state)
@@ -1153,6 +1173,8 @@ void _spvm_context_create_execute_table(spvm_context_t ctx)
 	ctx->opcode_execute[SpvOpFOrdGreaterThan] = spvm_execute_OpFOrdGreaterThan;
 	ctx->opcode_execute[SpvOpFOrdLessThanEqual] = spvm_execute_OpFOrdLessThanEqual;
 	ctx->opcode_execute[SpvOpFOrdGreaterThanEqual] = spvm_execute_OpFOrdGreaterThanEqual;
+
+	ctx->opcode_execute[SpvOpImageSampleImplicitLod] = spvm_execute_OpImageSampleImplicitLod;
 
 	ctx->opcode_execute[SpvOpBranch] = spvm_execute_OpBranch;
 	ctx->opcode_execute[SpvOpBranchConditional] = spvm_execute_OpBranchConditional;
