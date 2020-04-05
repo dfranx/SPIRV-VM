@@ -1,3 +1,9 @@
 vsproject
 compile.bat
 glslc.exe
+.vscode
+CMakeCache.txt
+CMakeFiles/
+SPIRVVM
+cmake_install.cmake
+Makefile
