@@ -20,7 +20,7 @@ spvm_source load_source(const char* fname, size_t* src_size) {
 	fread(ret, el_count, sizeof(spvm_word), f);
 	fclose(f);
 
-	*src_size = file_size;
+	*src_size = el_count;
 
 	return ret;
 }

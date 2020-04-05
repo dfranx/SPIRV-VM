@@ -3,6 +3,9 @@
 #include <spvm/state.h>
 #include <spvm/spirv.h>
 
+#define MAX(x, y) (((x) > (y)) ? (x) : (y))
+#define MIN(x, y) (((x) < (y)) ? (x) : (y))
+
 /* 3.32.2 Debug Instructions */
 void spvm_setup_OpSource(spvm_word word_count, spvm_state_t state)
 {
@@ -25,7 +28,7 @@ void spvm_setup_OpMemberName(spvm_word word_count, spvm_state_t state)
 	spvm_word id = SPVM_READ_WORD(state->code_current);
 	spvm_word memb = SPVM_READ_WORD(state->code_current);
 
-	state->results[id].member_name_count = max(memb + 1, state->results[id].member_name_count);
+	state->results[id].member_name_count = MAX(memb + 1, state->results[id].member_name_count);
 	state->results[id].member_name = (spvm_string*)realloc(state->results[id].member_name, sizeof(spvm_string) * state->results[id].member_name_count);
 
 	spvm_word slen = word_count - 2;
@@ -195,7 +198,7 @@ void spvm_setup_OpTypeFunction(spvm_word word_count, spvm_state_t state)
 
 	state->results[id].type = spvm_result_type_function_type;
 	state->results[id].pointer = return_id;
-	state->results[id].param_count = param_count;
+	state->results[id].member_count = param_count;
 	state->results[id].param_type = (spvm_word*)malloc(param_count * sizeof(spvm_word));
 
 	for (spvm_word i = 0; i < param_count; i++)

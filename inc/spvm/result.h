@@ -50,7 +50,6 @@ typedef struct spvm_result {
 	spvm_word extension_name; // index in the spvm_program::imports
 
 	/* spvm_result_type_function_type / spvm_result_type_type (structure) */
-	spvm_word param_count;
 	spvm_word* param_type;
 
 	/* function & label */

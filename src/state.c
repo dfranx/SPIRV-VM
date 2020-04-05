@@ -173,7 +173,7 @@ void spvm_state_delete(spvm_state_t state)
 
 		// member/parameter types
 		if (res->value_type == spvm_value_type_struct || res->type == spvm_result_type_function_type)
-			free(res->param_count);
+			free(res->param_type);
 
 		// decorations
 		if (res->decoration_count)

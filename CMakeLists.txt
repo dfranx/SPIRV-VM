@@ -15,5 +15,6 @@ src/opcode_setup.c
 )
 
 add_executable(SPIRVVM ${SOURCES})
+target_link_libraries(SPIRVVM m)
 
 target_include_directories(SPIRVVM PRIVATE inc)
