@@ -8,9 +8,8 @@
 
 /*
 1. executing shaders multiple times & memory leaks
-2. X bit sized values
-3. textures
-4. extensions
+2. textures
+3. extensions
 */
 
 /* opcodes */
@@ -192,6 +191,31 @@ void spvm_execute_OpConvertUToF(spvm_word word_count, spvm_state_t state)
 	for (spvm_word i = 0; i < state->results[id].member_count; i++)
 		state->results[id].members[i].value.f = (float)state->results[val].members[i].value.u;
 }
+void spvm_execute_OpConvertSToF(spvm_word word_count, spvm_state_t state)
+{
+	SPVM_SKIP_WORD(state->code_current);
+	spvm_word id = SPVM_READ_WORD(state->code_current);
+	spvm_word val = SPVM_READ_WORD(state->code_current);
+
+	for (spvm_word i = 0; i < state->results[id].member_count; i++)
+		state->results[id].members[i].value.f = (float)state->results[val].members[i].value.s;
+}
+void spvm_execute_OpFConvert(spvm_word word_count, spvm_state_t state)
+{
+	spvm_word res_type = SPVM_READ_WORD(state->code_current);
+	spvm_word id = SPVM_READ_WORD(state->code_current);
+	spvm_word val = SPVM_READ_WORD(state->code_current);
+
+	spvm_result_t res_type_info = spvm_state_get_type_info(state->results, &state->results[res_type]);
+	spvm_result_t val_info = spvm_state_get_type_info(state->results, &state->results[state->results[val].pointer]);
+
+	if (res_type_info->value_bitmask > val_info->value_bitmask)
+		for (spvm_word i = 0; i < state->results[id].member_count; i++)
+			state->results[id].members[i].value.d = (double)state->results[val].members[i].value.f;
+	else
+		for (spvm_word i = 0; i < state->results[id].member_count; i++)
+			state->results[id].members[i].value.f = (float)state->results[val].members[i].value.d;
+}
 void spvm_execute_OpBitcast(spvm_word word_count, spvm_state_t state)
 {
 	SPVM_SKIP_WORD(state->code_current);
@@ -329,13 +353,20 @@ void spvm_execute_OpIAdd(spvm_word word_count, spvm_state_t state)
 }
 void spvm_execute_OpFAdd(spvm_word word_count, spvm_state_t state)
 {
-	SPVM_SKIP_WORD(state->code_current);
+	spvm_word type = SPVM_READ_WORD(state->code_current);
 	spvm_word id = SPVM_READ_WORD(state->code_current);
 	spvm_word op1 = SPVM_READ_WORD(state->code_current);
 	spvm_word op2 = SPVM_READ_WORD(state->code_current);
 
-	for (spvm_word i = 0; i < state->results[id].member_count; i++)
-		state->results[id].members[i].value.f = state->results[op1].members[i].value.f + state->results[op2].members[i].value.f;
+	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[type]);
+
+	// TODO: is there a better way to do this?
+	if (type_info->value_bitmask > 32)
+		for (spvm_word i = 0; i < state->results[id].member_count; i++)
+			state->results[id].members[i].value.d = state->results[op1].members[i].value.d + state->results[op2].members[i].value.d;
+	else
+		for (spvm_word i = 0; i < state->results[id].member_count; i++)
+			state->results[id].members[i].value.f = state->results[op1].members[i].value.f + state->results[op2].members[i].value.f;
 }
 void spvm_execute_OpISub(spvm_word word_count, spvm_state_t state)
 {
@@ -349,13 +380,20 @@ void spvm_execute_OpISub(spvm_word word_count, spvm_state_t state)
 }
 void spvm_execute_OpFSub(spvm_word word_count, spvm_state_t state)
 {
-	SPVM_SKIP_WORD(state->code_current);
+	spvm_word type = SPVM_READ_WORD(state->code_current);
 	spvm_word id = SPVM_READ_WORD(state->code_current);
 	spvm_word op1 = SPVM_READ_WORD(state->code_current);
 	spvm_word op2 = SPVM_READ_WORD(state->code_current);
 
-	for (spvm_word i = 0; i < state->results[id].member_count; i++)
-		state->results[id].members[i].value.f = state->results[op1].members[i].value.f - state->results[op2].members[i].value.f;
+	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[type]);
+
+	// TODO: is there a better way to do this?
+	if (type_info->value_bitmask > 32)
+		for (spvm_word i = 0; i < state->results[id].member_count; i++)
+			state->results[id].members[i].value.d = state->results[op1].members[i].value.d - state->results[op2].members[i].value.d;
+	else
+		for (spvm_word i = 0; i < state->results[id].member_count; i++)
+			state->results[id].members[i].value.f = state->results[op1].members[i].value.f - state->results[op2].members[i].value.f;
 }
 void spvm_execute_OpIMul(spvm_word word_count, spvm_state_t state)
 {
@@ -369,13 +407,20 @@ void spvm_execute_OpIMul(spvm_word word_count, spvm_state_t state)
 }
 void spvm_execute_OpFMul(spvm_word word_count, spvm_state_t state)
 {
-	SPVM_SKIP_WORD(state->code_current);
+	spvm_word type = SPVM_READ_WORD(state->code_current);
 	spvm_word id = SPVM_READ_WORD(state->code_current);
 	spvm_word op1 = SPVM_READ_WORD(state->code_current);
 	spvm_word op2 = SPVM_READ_WORD(state->code_current);
 
-	for (spvm_word i = 0; i < state->results[id].member_count; i++)
-		state->results[id].members[i].value.f = state->results[op1].members[i].value.f * state->results[op2].members[i].value.f;
+	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[type]);
+
+	// TODO: is there a better way to do this?
+	if (type_info->value_bitmask > 32)
+		for (spvm_word i = 0; i < state->results[id].member_count; i++)
+			state->results[id].members[i].value.d = state->results[op1].members[i].value.d * state->results[op2].members[i].value.d;
+	else
+		for (spvm_word i = 0; i < state->results[id].member_count; i++)
+			state->results[id].members[i].value.f = state->results[op1].members[i].value.f * state->results[op2].members[i].value.f;
 }
 void spvm_execute_OpUDiv(spvm_word word_count, spvm_state_t state)
 {
@@ -399,13 +444,20 @@ void spvm_execute_OpSDiv(spvm_word word_count, spvm_state_t state)
 }
 void spvm_execute_OpFDiv(spvm_word word_count, spvm_state_t state)
 {
-	SPVM_SKIP_WORD(state->code_current);
+	spvm_word type = SPVM_READ_WORD(state->code_current);
 	spvm_word id = SPVM_READ_WORD(state->code_current);
 	spvm_word op1 = SPVM_READ_WORD(state->code_current);
 	spvm_word op2 = SPVM_READ_WORD(state->code_current);
 
-	for (spvm_word i = 0; i < state->results[id].member_count; i++)
-		state->results[id].members[i].value.f = state->results[op1].members[i].value.f / state->results[op2].members[i].value.f;
+	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[type]);
+
+	// TODO: is there a better way to do this?
+	if (type_info->value_bitmask > 32)
+		for (spvm_word i = 0; i < state->results[id].member_count; i++)
+			state->results[id].members[i].value.d = state->results[op1].members[i].value.d / state->results[op2].members[i].value.d;
+	else
+		for (spvm_word i = 0; i < state->results[id].member_count; i++)
+			state->results[id].members[i].value.f = state->results[op1].members[i].value.f / state->results[op2].members[i].value.f;
 }
 void spvm_execute_OpUMod(spvm_word word_count, spvm_state_t state)
 {
@@ -429,13 +481,20 @@ void spvm_execute_OpSMod(spvm_word word_count, spvm_state_t state)
 }
 void spvm_execute_OpFMod(spvm_word word_count, spvm_state_t state)
 {
-	SPVM_SKIP_WORD(state->code_current);
+	spvm_word type = SPVM_READ_WORD(state->code_current);
 	spvm_word id = SPVM_READ_WORD(state->code_current);
 	spvm_word op1 = SPVM_READ_WORD(state->code_current);
 	spvm_word op2 = SPVM_READ_WORD(state->code_current);
 
-	for (spvm_word i = 0; i < state->results[id].member_count; i++)
-		state->results[id].members[i].value.f = fmodf(state->results[op1].members[i].value.f, state->results[op2].members[i].value.f);
+	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[type]);
+
+	// TODO: is there a better way to do this?
+	if (type_info->value_bitmask > 32)
+		for (spvm_word i = 0; i < state->results[id].member_count; i++)
+			state->results[id].members[i].value.d = fmod(state->results[op1].members[i].value.d, state->results[op2].members[i].value.d);
+	else
+		for (spvm_word i = 0; i < state->results[id].member_count; i++)
+			state->results[id].members[i].value.f = fmodf(state->results[op1].members[i].value.f, state->results[op2].members[i].value.f);
 }
 void spvm_execute_OpVectorTimesScalar(spvm_word word_count, spvm_state_t state)
 {
@@ -903,6 +962,8 @@ void _spvm_context_create_execute_table(spvm_context_t ctx)
 	ctx->opcode_execute[SpvOpConvertFToU] = spvm_execute_OpConvertFToU;
 	ctx->opcode_execute[SpvOpConvertFToS] = spvm_execute_OpConvertFToS;
 	ctx->opcode_execute[SpvOpConvertUToF] = spvm_execute_OpConvertUToF;
+	ctx->opcode_execute[SpvOpConvertSToF] = spvm_execute_OpConvertSToF;
+	ctx->opcode_execute[SpvOpFConvert] = spvm_execute_OpFConvert;
 	ctx->opcode_execute[SpvOpBitcast] = spvm_execute_OpBitcast;
 
 	ctx->opcode_execute[SpvOpVectorExtractDynamic] = spvm_execute_OpVectorExtractDynamic;

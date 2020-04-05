@@ -1,113 +1,56 @@
 ; SPIR-V
 ; Version: 1.4
 ; Generator: Google Shaderc over Glslang; 8
-; Bound: 70
+; Bound: 28
 ; Schema: 0
                OpCapability Shader
+               OpCapability Float64
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
-               OpEntryPoint Fragment %main "main" %sel %outColor %uValue
+               OpEntryPoint Fragment %main "main" %outColor %uValue %sel
                OpExecutionMode %main OriginLowerLeft
                OpSource GLSL 450
                OpSourceExtension "GL_GOOGLE_cpp_style_line_directive"
                OpSourceExtension "GL_GOOGLE_include_directive"
                OpName %main "main"
-               OpName %incr_f1_ "incr(f1;"
                OpName %a "a"
-               OpName %mtl_f1_f1_ "mtl(f1;f1;"
-               OpName %a_0 "a"
                OpName %b "b"
-               OpName %mul "mul"
-               OpName %param "param"
-               OpName %data "data"
-               OpName %sel "sel"
+               OpName %c "c"
                OpName %outColor "outColor"
-               OpName %param_0 "param"
-               OpName %param_1 "param"
                OpName %uValue "uValue"
-               OpDecorate %sel Location 1
+               OpName %sel "sel"
                OpDecorate %outColor Location 0
                OpDecorate %uValue Location 0
+               OpDecorate %sel Location 1
        %void = OpTypeVoid
           %3 = OpTypeFunction %void
+     %double = OpTypeFloat 64
+%_ptr_Function_double = OpTypePointer Function %double
+ %double_0_5 = OpConstant %double 0.5
+ %double_1_5 = OpConstant %double 1.5
       %float = OpTypeFloat 32
-%_ptr_Function_float = OpTypePointer Function %float
-          %8 = OpTypeFunction %void %_ptr_Function_float
-         %12 = OpTypeFunction %float %_ptr_Function_float %_ptr_Function_float
-    %float_2 = OpConstant %float 2
-  %float_0_5 = OpConstant %float 0.5
     %v4float = OpTypeVector %float 4
-%_ptr_Function_v4float = OpTypePointer Function %v4float
-    %float_1 = OpConstant %float 1
-    %float_3 = OpConstant %float 3
-    %float_4 = OpConstant %float 4
-         %34 = OpConstantComposite %v4float %float_1 %float_2 %float_3 %float_4
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+   %outColor = OpVariable %_ptr_Output_v4float Output
+%_ptr_UniformConstant_v4float = OpTypePointer UniformConstant %v4float
+     %uValue = OpVariable %_ptr_UniformConstant_v4float UniformConstant
         %int = OpTypeInt 32 1
 %_ptr_UniformConstant_int = OpTypePointer UniformConstant %int
         %sel = OpVariable %_ptr_UniformConstant_int UniformConstant
-      %int_0 = OpConstant %int 0
-       %bool = OpTypeBool
-    %v2float = OpTypeVector %float 2
- %float_0_75 = OpConstant %float 0.75
-         %48 = OpConstantComposite %v2float %float_0_5 %float_0_75
-%_ptr_Output_v4float = OpTypePointer Output %v4float
-   %outColor = OpVariable %_ptr_Output_v4float Output
-       %uint = OpTypeInt 32 0
-     %uint_0 = OpConstant %uint 0
-    %v3float = OpTypeVector %float 3
-%_ptr_UniformConstant_v4float = OpTypePointer UniformConstant %v4float
-     %uValue = OpVariable %_ptr_UniformConstant_v4float UniformConstant
        %main = OpFunction %void None %3
           %5 = OpLabel
-        %mul = OpVariable %_ptr_Function_float Function
-      %param = OpVariable %_ptr_Function_float Function
-       %data = OpVariable %_ptr_Function_v4float Function
-    %param_0 = OpVariable %_ptr_Function_float Function
-    %param_1 = OpVariable %_ptr_Function_float Function
-               OpStore %mul %float_0_5
-         %26 = OpFunctionCall %void %incr_f1_ %param
-         %27 = OpLoad %float %param
-               OpStore %mul %27
-               OpStore %data %34
-         %38 = OpLoad %int %sel
-         %41 = OpIEqual %bool %38 %int_0
-               OpSelectionMerge %43 None
-               OpBranchConditional %41 %42 %45
-         %42 = OpLabel
-               OpKill
-         %45 = OpLabel
-         %49 = OpLoad %v4float %data
-         %50 = OpVectorShuffle %v4float %49 %48 4 5 2 3
-               OpStore %data %50
-               OpBranch %43
-         %43 = OpLabel
-         %54 = OpLoad %float %mul
-               OpStore %param_0 %54
-         %58 = OpAccessChain %_ptr_Function_float %data %uint_0
-         %59 = OpLoad %float %58
-               OpStore %param_1 %59
-         %60 = OpFunctionCall %float %mtl_f1_f1_ %param_0 %param_1
-         %62 = OpLoad %v4float %data
-         %63 = OpVectorShuffle %v3float %62 %62 0 1 2
-         %64 = OpCompositeExtract %float %63 0
-         %65 = OpCompositeExtract %float %63 1
-         %66 = OpCompositeExtract %float %63 2
-         %67 = OpCompositeConstruct %v4float %60 %64 %65 %66
-               OpStore %outColor %67
+          %a = OpVariable %_ptr_Function_double Function
+          %b = OpVariable %_ptr_Function_double Function
+          %c = OpVariable %_ptr_Function_double Function
+               OpStore %a %double_0_5
+               OpStore %b %double_1_5
+         %13 = OpLoad %double %a
+         %14 = OpLoad %double %b
+         %15 = OpFMul %double %13 %14
+               OpStore %c %15
+         %20 = OpLoad %double %c
+         %21 = OpFConvert %float %20
+         %22 = OpCompositeConstruct %v4float %21 %21 %21 %21
+               OpStore %outColor %22
                OpReturn
-               OpFunctionEnd
-   %incr_f1_ = OpFunction %void None %8
-          %a = OpFunctionParameter %_ptr_Function_float
-         %11 = OpLabel
-               OpStore %a %float_2
-               OpReturn
-               OpFunctionEnd
- %mtl_f1_f1_ = OpFunction %float None %12
-        %a_0 = OpFunctionParameter %_ptr_Function_float
-          %b = OpFunctionParameter %_ptr_Function_float
-         %16 = OpLabel
-         %18 = OpLoad %float %a_0
-         %19 = OpLoad %float %b
-         %20 = OpFMul %float %18 %19
-               OpReturnValue %20
                OpFunctionEnd

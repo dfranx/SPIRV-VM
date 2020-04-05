@@ -4,8 +4,6 @@
 #include <spvm/context.h>
 #include <spvm/state.h>
 
-#include <time.h>
-
 spvm_source load_source(const char* fname, size_t* src_size) {
 	FILE* f = fopen(fname, "rb");
 	if (f == 0) {

@@ -113,31 +113,29 @@ void spvm_setup_OpTypeVoid(spvm_word word_count, spvm_state_t state)
 	spvm_word store_id = SPVM_READ_WORD(state->code_current);
 	state->results[store_id].type = spvm_result_type_type;
 	state->results[store_id].value_type = spvm_value_type_void;
-	state->results[store_id].value_bitmask = 0x00;
+	state->results[store_id].value_bitmask = 0;
 }
 void spvm_setup_OpTypeBool(spvm_word word_count, spvm_state_t state)
 {
 	spvm_word store_id = SPVM_READ_WORD(state->code_current);
 	state->results[store_id].type = spvm_result_type_type;
 	state->results[store_id].value_type = spvm_value_type_bool;
-	state->results[store_id].value_bitmask = ~0x00;
+	state->results[store_id].value_bitmask = 1;
 }
 void spvm_setup_OpTypeInt(spvm_word word_count, spvm_state_t state)
 {
 	spvm_word store_id = SPVM_READ_WORD(state->code_current);
-	spvm_word n = SPVM_READ_WORD(state->code_current);
 	state->results[store_id].type = spvm_result_type_type;
 	state->results[store_id].value_type = spvm_value_type_int;
-	state->results[store_id].value_bitmask = n == 32 ? 0xFFFFFFFF : ~(~0u << n);
+	state->results[store_id].value_bitmask = SPVM_READ_WORD(state->code_current);
 	state->results[store_id].value_sign = SPVM_READ_WORD(state->code_current);
 }
 void spvm_setup_OpTypeFloat(spvm_word word_count, spvm_state_t state)
 {
 	spvm_word store_id = SPVM_READ_WORD(state->code_current);
-	spvm_word n = SPVM_READ_WORD(state->code_current);
 	state->results[store_id].type = spvm_result_type_type;
 	state->results[store_id].value_type = spvm_value_type_float;
-	state->results[store_id].value_bitmask = n == 32 ? 0xFFFFFFFF : ~(~0u << n);
+	state->results[store_id].value_bitmask = SPVM_READ_WORD(state->code_current);
 }
 void spvm_setup_OpTypeVector(spvm_word word_count, spvm_state_t state)
 {
@@ -241,8 +239,13 @@ void spvm_setup_OpConstant(spvm_word word_count, spvm_state_t state)
 	state->results[id].type = spvm_result_type_constant;
 	spvm_result_allocate_typed_value(&state->results[id], state->results, var_type);
 
-	for (spvm_word i = 0; i < state->results[id].member_count; i++)
-		state->results[id].members[i].value.s = SPVM_READ_WORD(state->code_current);
+	state->results[id].members[0].value.u64 = SPVM_READ_WORD(state->code_current);
+
+	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[var_type]);
+	if (type_info->value_bitmask > 32) {
+		unsigned long long highBits = SPVM_READ_WORD(state->code_current);
+		state->results[id].members[0].value.u64 |= highBits << 32ull;
+	}
 }
 void spvm_setup_OpConstantComposite(spvm_word word_count, spvm_state_t state)
 {
@@ -389,6 +392,8 @@ void _spvm_context_create_setup_table(spvm_context_t ctx)
 	ctx->opcode_setup[SpvOpConvertFToU] = spvm_setup_constant;
 	ctx->opcode_setup[SpvOpConvertFToS] = spvm_setup_constant;
 	ctx->opcode_setup[SpvOpConvertUToF] = spvm_setup_constant;
+	ctx->opcode_setup[SpvOpConvertSToF] = spvm_setup_constant;
+	ctx->opcode_setup[SpvOpFConvert] = spvm_setup_constant;
 	ctx->opcode_setup[SpvOpBitcast] = spvm_setup_constant;
 
 	ctx->opcode_setup[SpvOpVectorExtractDynamic] = spvm_setup_constant;
