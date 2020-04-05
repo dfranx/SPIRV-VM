@@ -498,98 +498,160 @@ void spvm_execute_OpFMod(spvm_word word_count, spvm_state_t state)
 }
 void spvm_execute_OpVectorTimesScalar(spvm_word word_count, spvm_state_t state)
 {
-	SPVM_SKIP_WORD(state->code_current);
+	spvm_word type = SPVM_READ_WORD(state->code_current);
 	spvm_word id = SPVM_READ_WORD(state->code_current);
 	spvm_word vec = SPVM_READ_WORD(state->code_current);
 	spvm_word scalar = SPVM_READ_WORD(state->code_current);
 
-	for (spvm_word i = 0; i < state->results[id].member_count; i++)
-		state->results[id].members[i].value.f = state->results[vec].members[i].value.f * state->results[scalar].members[0].value.f;
+	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[type]);
+
+	if (type_info->value_bitmask > 32)
+		for (spvm_word i = 0; i < state->results[id].member_count; i++)
+			state->results[id].members[i].value.d = state->results[vec].members[i].value.d * state->results[scalar].members[0].value.d;
+	else
+		for (spvm_word i = 0; i < state->results[id].member_count; i++)
+			state->results[id].members[i].value.f = state->results[vec].members[i].value.f * state->results[scalar].members[0].value.f;
 }
 void spvm_execute_OpMatrixTimesScalar(spvm_word word_count, spvm_state_t state)
 {
-	SPVM_SKIP_WORD(state->code_current);
+	spvm_word type = SPVM_READ_WORD(state->code_current);
 	spvm_word id = SPVM_READ_WORD(state->code_current);
 	spvm_word mat = SPVM_READ_WORD(state->code_current);
 	spvm_word scalar = SPVM_READ_WORD(state->code_current);
 
+	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[type]);
+
 	spvm_word s1 = state->results[mat].member_count;
 	spvm_word s2 = state->results[mat].members[0].member_count;
-	for (spvm_word i = 0; i < s1; i++)
-		for (spvm_word j = 0; j < s2; j++)
-			state->results[id].members[i].members[j].value.f = state->results[mat].members[i].members[j].value.f * state->results[scalar].members[0].value.f;
+	if (type_info->value_bitmask > 32)
+		for (spvm_word i = 0; i < s1; i++)
+			for (spvm_word j = 0; j < s2; j++)
+				state->results[id].members[i].members[j].value.d = state->results[mat].members[i].members[j].value.d * state->results[scalar].members[0].value.d;
+	else
+		for (spvm_word i = 0; i < s1; i++)
+			for (spvm_word j = 0; j < s2; j++)
+				state->results[id].members[i].members[j].value.f = state->results[mat].members[i].members[j].value.f * state->results[scalar].members[0].value.f;
 }
 void spvm_execute_OpVectorTimesMatrix(spvm_word word_count, spvm_state_t state)
 {
-	SPVM_SKIP_WORD(state->code_current);
+	spvm_word type = SPVM_READ_WORD(state->code_current);
 	spvm_word id = SPVM_READ_WORD(state->code_current);
 	spvm_word vec = SPVM_READ_WORD(state->code_current);
 	spvm_word mat = SPVM_READ_WORD(state->code_current);
 
+	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[type]);
+
 	spvm_word resSize = state->results[id].member_count;
 	spvm_word mySize = state->results[vec].member_count;
-	for (spvm_word i = 0; i < resSize; i++) {
-		float res = 0.0f;
+	if (type_info->value_bitmask > 32) {
+		for (spvm_word i = 0; i < resSize; i++) {
+			double res = 0.0;
 
-		for (spvm_word j = 0; j < mySize; j++)
-			res += state->results[mat].members[i].members[j].value.f * state->results[vec].members[j].value.f;
+			for (spvm_word j = 0; j < mySize; j++)
+				res += state->results[mat].members[i].members[j].value.d * state->results[vec].members[j].value.d;
 
-		state->results[id].members[i].value.f = res;
+			state->results[id].members[i].value.d = res;
+		}
+	} else {
+		for (spvm_word i = 0; i < resSize; i++) {
+			float res = 0.0f;
+
+			for (spvm_word j = 0; j < mySize; j++)
+				res += state->results[mat].members[i].members[j].value.f * state->results[vec].members[j].value.f;
+
+			state->results[id].members[i].value.f = res;
+		}
 	}
 }
 void spvm_execute_OpMatrixTimesVector(spvm_word word_count, spvm_state_t state)
 {
-	SPVM_SKIP_WORD(state->code_current);
+	spvm_word type = SPVM_READ_WORD(state->code_current);
 	spvm_word id = SPVM_READ_WORD(state->code_current);
 	spvm_word mat = SPVM_READ_WORD(state->code_current);
 	spvm_word vec = SPVM_READ_WORD(state->code_current);
 
+	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[type]);
+
 	spvm_word resSize = state->results[id].member_count;
 	spvm_word mySize = state->results[vec].member_count;
-	for (spvm_word i = 0; i < resSize; i++) {
-		float res = 0.0f;
+	if (type_info->value_bitmask > 32) {
+		for (spvm_word i = 0; i < resSize; i++) {
+			double res = 0.0;
 
-		for (spvm_word j = 0; j < mySize; j++)
-			res += state->results[mat].members[j].members[i].value.f * state->results[vec].members[j].value.f;
+			for (spvm_word j = 0; j < mySize; j++)
+				res += state->results[mat].members[j].members[i].value.d * state->results[vec].members[j].value.d;
 
-		state->results[id].members[i].value.f = res;
+			state->results[id].members[i].value.d = res;
+		}
+	} else {
+		for (spvm_word i = 0; i < resSize; i++) {
+			float res = 0.0f;
+
+			for (spvm_word j = 0; j < mySize; j++)
+				res += state->results[mat].members[j].members[i].value.f * state->results[vec].members[j].value.f;
+
+			state->results[id].members[i].value.f = res;
+		}
 	}
 }
 void spvm_execute_OpMatrixTimesMatrix(spvm_word word_count, spvm_state_t state)
 {
-	SPVM_SKIP_WORD(state->code_current);
+	spvm_word type = SPVM_READ_WORD(state->code_current);
 	spvm_word id = SPVM_READ_WORD(state->code_current);
 	spvm_word left = SPVM_READ_WORD(state->code_current);
 	spvm_word right = SPVM_READ_WORD(state->code_current);
 
+	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[type]);
+
 	spvm_word s1 = state->results[id].member_count;
 	spvm_word s2 = state->results[id].members[0].member_count;
-	for (spvm_word i = 0; i < s1; i++)
-		for (spvm_word j = 0; j < s2; j++)
-			state->results[id].members[i].members[j].value.f = state->results[left].members[i].members[j].value.f * state->results[right].members[i].members[j].value.f;
+	if (type_info->value_bitmask > 32) {
+		for (spvm_word i = 0; i < s1; i++)
+			for (spvm_word j = 0; j < s2; j++)
+				state->results[id].members[i].members[j].value.d = state->results[left].members[i].members[j].value.d * state->results[right].members[i].members[j].value.d;
+	} else {
+		for (spvm_word i = 0; i < s1; i++)
+			for (spvm_word j = 0; j < s2; j++)
+				state->results[id].members[i].members[j].value.f = state->results[left].members[i].members[j].value.f * state->results[right].members[i].members[j].value.f;
+	}
 }
 void spvm_execute_OpOuterProduct(spvm_word word_count, spvm_state_t state)
 {
-	SPVM_SKIP_WORD(state->code_current);
+	spvm_word type = SPVM_READ_WORD(state->code_current);
 	spvm_word id = SPVM_READ_WORD(state->code_current);
 	spvm_word vec1 = SPVM_READ_WORD(state->code_current);
 	spvm_word vec2 = SPVM_READ_WORD(state->code_current);
+
+	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[type]);
 
 	spvm_word s1 = state->results[id].member_count;
 	spvm_word s2 = state->results[id].members[0].member_count;
-	for (spvm_word i = 0; i < s1; i++)
-		for (spvm_word j = 0; j < s2; j++)
-			state->results[id].members[i].members[j].value.f = state->results[vec1].members[i].value.f * state->results[vec2].members[j].value.f;
+	if (type_info->value_bitmask > 32) {
+		for (spvm_word i = 0; i < s1; i++)
+			for (spvm_word j = 0; j < s2; j++)
+				state->results[id].members[i].members[j].value.d = state->results[vec1].members[i].value.d * state->results[vec2].members[j].value.d;
+	} else {
+		for (spvm_word i = 0; i < s1; i++)
+			for (spvm_word j = 0; j < s2; j++)
+				state->results[id].members[i].members[j].value.f = state->results[vec1].members[i].value.f * state->results[vec2].members[j].value.f;
+	}
 }
 void spvm_execute_OpDot(spvm_word word_count, spvm_state_t state)
 {
-	SPVM_SKIP_WORD(state->code_current);
+	spvm_word type = SPVM_READ_WORD(state->code_current);
 	spvm_word id = SPVM_READ_WORD(state->code_current);
 	spvm_word vec1 = SPVM_READ_WORD(state->code_current);
 	spvm_word vec2 = SPVM_READ_WORD(state->code_current);
 
-	for (spvm_word i = 0; i < state->results[id].member_count; i++)
-		state->results[id].members[i].value.f += state->results[vec1].members[i].value.f * state->results[vec2].members[i].value.f;
+	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[type]);
+
+	if (type_info->value_bitmask > 32) {
+		for (spvm_word i = 0; i < state->results[id].member_count; i++)
+			state->results[id].members[i].value.d += state->results[vec1].members[i].value.d * state->results[vec2].members[i].value.d;
+	} else {
+		for (spvm_word i = 0; i < state->results[id].member_count; i++)
+			state->results[id].members[i].value.f += state->results[vec1].members[i].value.f * state->results[vec2].members[i].value.f;
+	}
 }
 
 /* 3.32.14 Bit Instructions */
@@ -827,63 +889,99 @@ void spvm_execute_OpSLessThanEqual(spvm_word word_count, spvm_state_t state)
 }
 void spvm_execute_OpFOrdEqual(spvm_word word_count, spvm_state_t state)
 {
-	SPVM_SKIP_WORD(state->code_current);
+	spvm_word type = SPVM_READ_WORD(state->code_current);
 	spvm_word id = SPVM_READ_WORD(state->code_current);
 	spvm_word op1 = SPVM_READ_WORD(state->code_current);
 	spvm_word op2 = SPVM_READ_WORD(state->code_current);
 
-	for (spvm_word i = 0; i < state->results[id].member_count; i++)
-		state->results[id].members[i].value.b = state->results[op1].members[i].value.f == state->results[op2].members[i].value.f;
+	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[type]);
+
+	if (type_info->value_bitmask > 32)
+		for (spvm_word i = 0; i < state->results[id].member_count; i++)
+			state->results[id].members[i].value.b = state->results[op1].members[i].value.d == state->results[op2].members[i].value.d;
+	else
+		for (spvm_word i = 0; i < state->results[id].member_count; i++)
+			state->results[id].members[i].value.b = state->results[op1].members[i].value.f == state->results[op2].members[i].value.f;
 }
 void spvm_execute_OpFOrdNotEqual(spvm_word word_count, spvm_state_t state)
 {
-	SPVM_SKIP_WORD(state->code_current);
+	spvm_word type = SPVM_READ_WORD(state->code_current);
 	spvm_word id = SPVM_READ_WORD(state->code_current);
 	spvm_word op1 = SPVM_READ_WORD(state->code_current);
 	spvm_word op2 = SPVM_READ_WORD(state->code_current);
 
-	for (spvm_word i = 0; i < state->results[id].member_count; i++)
-		state->results[id].members[i].value.b = state->results[op1].members[i].value.f != state->results[op2].members[i].value.f;
+	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[type]);
+
+	if (type_info->value_bitmask > 32)
+		for (spvm_word i = 0; i < state->results[id].member_count; i++)
+			state->results[id].members[i].value.b = state->results[op1].members[i].value.d != state->results[op2].members[i].value.d;
+	else
+		for (spvm_word i = 0; i < state->results[id].member_count; i++)
+			state->results[id].members[i].value.b = state->results[op1].members[i].value.f != state->results[op2].members[i].value.f;
 }
 void spvm_execute_OpFOrdLessThan(spvm_word word_count, spvm_state_t state)
 {
-	SPVM_SKIP_WORD(state->code_current);
+	spvm_word type = SPVM_READ_WORD(state->code_current);
 	spvm_word id = SPVM_READ_WORD(state->code_current);
 	spvm_word op1 = SPVM_READ_WORD(state->code_current);
 	spvm_word op2 = SPVM_READ_WORD(state->code_current);
 
-	for (spvm_word i = 0; i < state->results[id].member_count; i++)
-		state->results[id].members[i].value.b = state->results[op1].members[i].value.f < state->results[op2].members[i].value.f;
+	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[type]);
+
+	if (type_info->value_bitmask > 32)
+		for (spvm_word i = 0; i < state->results[id].member_count; i++)
+			state->results[id].members[i].value.b = state->results[op1].members[i].value.d < state->results[op2].members[i].value.d;
+	else
+		for (spvm_word i = 0; i < state->results[id].member_count; i++)
+			state->results[id].members[i].value.b = state->results[op1].members[i].value.f < state->results[op2].members[i].value.f;
 }
 void spvm_execute_OpFOrdGreaterThan(spvm_word word_count, spvm_state_t state)
 {
-	SPVM_SKIP_WORD(state->code_current);
+	spvm_word type = SPVM_READ_WORD(state->code_current);
 	spvm_word id = SPVM_READ_WORD(state->code_current);
 	spvm_word op1 = SPVM_READ_WORD(state->code_current);
 	spvm_word op2 = SPVM_READ_WORD(state->code_current);
 
-	for (spvm_word i = 0; i < state->results[id].member_count; i++)
-		state->results[id].members[i].value.b = state->results[op1].members[i].value.f > state->results[op2].members[i].value.f;
+	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[type]);
+
+	if (type_info->value_bitmask > 32)
+		for (spvm_word i = 0; i < state->results[id].member_count; i++)
+			state->results[id].members[i].value.b = state->results[op1].members[i].value.d > state->results[op2].members[i].value.d;
+	else
+		for (spvm_word i = 0; i < state->results[id].member_count; i++)
+			state->results[id].members[i].value.b = state->results[op1].members[i].value.f > state->results[op2].members[i].value.f;
 }
 void spvm_execute_OpFOrdLessThanEqual(spvm_word word_count, spvm_state_t state)
 {
-	SPVM_SKIP_WORD(state->code_current);
+	spvm_word type = SPVM_READ_WORD(state->code_current);
 	spvm_word id = SPVM_READ_WORD(state->code_current);
 	spvm_word op1 = SPVM_READ_WORD(state->code_current);
 	spvm_word op2 = SPVM_READ_WORD(state->code_current);
 
-	for (spvm_word i = 0; i < state->results[id].member_count; i++)
-		state->results[id].members[i].value.b = state->results[op1].members[i].value.f <= state->results[op2].members[i].value.f;
+	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[type]);
+
+	if (type_info->value_bitmask > 32)
+		for (spvm_word i = 0; i < state->results[id].member_count; i++)
+			state->results[id].members[i].value.b = state->results[op1].members[i].value.d <= state->results[op2].members[i].value.d;
+	else
+		for (spvm_word i = 0; i < state->results[id].member_count; i++)
+			state->results[id].members[i].value.b = state->results[op1].members[i].value.f <= state->results[op2].members[i].value.f;
 }
 void spvm_execute_OpFOrdGreaterThanEqual(spvm_word word_count, spvm_state_t state)
 {
-	SPVM_SKIP_WORD(state->code_current);
+	spvm_word type = SPVM_READ_WORD(state->code_current);
 	spvm_word id = SPVM_READ_WORD(state->code_current);
 	spvm_word op1 = SPVM_READ_WORD(state->code_current);
 	spvm_word op2 = SPVM_READ_WORD(state->code_current);
 
-	for (spvm_word i = 0; i < state->results[id].member_count; i++)
-		state->results[id].members[i].value.b = state->results[op1].members[i].value.f >= state->results[op2].members[i].value.f;
+	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[type]);
+
+	if (type_info->value_bitmask > 32)
+		for (spvm_word i = 0; i < state->results[id].member_count; i++)
+			state->results[id].members[i].value.b = state->results[op1].members[i].value.d >= state->results[op2].members[i].value.d;
+	else
+		for (spvm_word i = 0; i < state->results[id].member_count; i++)
+			state->results[id].members[i].value.b = state->results[op1].members[i].value.f >= state->results[op2].members[i].value.f;
 }
 
 /* 3.32.17 Control-Flow Instructions */

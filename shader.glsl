@@ -10,5 +10,7 @@ void main()
 	double a = 0.5;
 	double b = 1.5;
 	double c = a*b;
+	if (c > 0.75)
+		c *= 0.5;
 	outColor = vec4(c);
 }
