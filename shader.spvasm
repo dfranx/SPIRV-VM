@@ -1,46 +1,45 @@
 ; SPIR-V
-; Version: 1.0
-; Generator: Khronos Glslang Reference Front End; 7
-; Bound: 24
+; Version: 1.4
+; Generator: Google Shaderc over Glslang; 8
+; Bound: 21
 ; Schema: 0
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
-               OpEntryPoint Fragment %main "main" %outColor
+               OpEntryPoint Fragment %main "main" %outColor %uValue %sel %Noise2d
                OpExecutionMode %main OriginLowerLeft
                OpSource GLSL 450
+               OpSourceExtension "GL_GOOGLE_cpp_style_line_directive"
+               OpSourceExtension "GL_GOOGLE_include_directive"
                OpName %main "main"
                OpName %outColor "outColor"
-               OpName %Noise2d "Noise2d"
                OpName %uValue "uValue"
                OpName %sel "sel"
+               OpName %Noise2d "Noise2d"
                OpDecorate %outColor Location 0
-               OpDecorate %Noise2d DescriptorSet 0
-               OpDecorate %Noise2d Binding 0
                OpDecorate %uValue Location 0
                OpDecorate %sel Location 1
+               OpDecorate %Noise2d DescriptorSet 0
+               OpDecorate %Noise2d Binding 0
        %void = OpTypeVoid
           %3 = OpTypeFunction %void
       %float = OpTypeFloat 32
     %v4float = OpTypeVector %float 4
 %_ptr_Output_v4float = OpTypePointer Output %v4float
    %outColor = OpVariable %_ptr_Output_v4float Output
-         %10 = OpTypeImage %float 2D 0 0 0 1 Unknown
-         %11 = OpTypeSampledImage %10
-%_ptr_UniformConstant_11 = OpTypePointer UniformConstant %11
-    %Noise2d = OpVariable %_ptr_UniformConstant_11 UniformConstant
-    %v2float = OpTypeVector %float 2
-    %float_1 = OpConstant %float 1
-         %17 = OpConstantComposite %v2float %float_1 %float_1
 %_ptr_UniformConstant_v4float = OpTypePointer UniformConstant %v4float
      %uValue = OpVariable %_ptr_UniformConstant_v4float UniformConstant
         %int = OpTypeInt 32 1
 %_ptr_UniformConstant_int = OpTypePointer UniformConstant %int
         %sel = OpVariable %_ptr_UniformConstant_int UniformConstant
+         %17 = OpTypeImage %float 2D 0 0 0 1 Unknown
+         %18 = OpTypeSampledImage %17
+%_ptr_UniformConstant_18 = OpTypePointer UniformConstant %18
+    %Noise2d = OpVariable %_ptr_UniformConstant_18 UniformConstant
        %main = OpFunction %void None %3
           %5 = OpLabel
-         %14 = OpLoad %11 %Noise2d
-         %18 = OpImageSampleImplicitLod %v4float %14 %17
-               OpStore %outColor %18
+         %12 = OpLoad %v4float %uValue
+         %13 = OpExtInst %v4float %1 Round %12
+               OpStore %outColor %13
                OpReturn
                OpFunctionEnd

@@ -30,6 +30,17 @@ void spvm_execute_OpNoLine(spvm_word word_count, spvm_state_t state)
 	state->current_column = -1;
 }
 
+/* 3.32.4 Debug Instructions */
+void spvm_execute_OpExtInst(spvm_word word_count, spvm_state_t state)
+{
+	spvm_word type = SPVM_READ_WORD(state->code_current);
+	spvm_word id = SPVM_READ_WORD(state->code_current);
+	spvm_word set = SPVM_READ_WORD(state->code_current);
+	spvm_word inst = SPVM_READ_WORD(state->code_current);
+
+	state->results[set].extension[inst](type, id, word_count - 4, state);
+}
+
 /* 3.32.8 Memory Instructions */
 void spvm_execute_OpStore(spvm_word word_count, spvm_state_t state)
 {
@@ -1106,6 +1117,8 @@ void _spvm_context_create_execute_table(spvm_context_t ctx)
 	ctx->opcode_execute[SpvOpReturn] = spvm_execute_OpReturn;
 	ctx->opcode_execute[SpvOpReturnValue] = spvm_execute_OpReturnValue;
 
+	ctx->opcode_execute[SpvOpExtInst] = spvm_execute_OpExtInst;
+	
 	ctx->opcode_execute[SpvOpConvertFToU] = spvm_execute_OpConvertFToU;
 	ctx->opcode_execute[SpvOpConvertFToS] = spvm_execute_OpConvertFToS;
 	ctx->opcode_execute[SpvOpConvertUToF] = spvm_execute_OpConvertUToF;

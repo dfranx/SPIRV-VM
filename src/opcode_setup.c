@@ -3,9 +3,6 @@
 #include <spvm/state.h>
 #include <spvm/spirv.h>
 
-#define MAX(x, y) (((x) > (y)) ? (x) : (y))
-#define MIN(x, y) (((x) < (y)) ? (x) : (y))
-
 /* 3.32.2 Debug Instructions */
 void spvm_setup_OpSource(spvm_word word_count, spvm_state_t state)
 {
@@ -70,11 +67,13 @@ void spvm_setup_OpExtInstImport(spvm_word word_count, spvm_state_t state)
 	spvm_word id = SPVM_READ_WORD(state->code_current);
 	spvm_word name_index = state->owner->import_count;
 
-	spvm_string imp = spvm_program_add_import(state->owner, word_count);
+	word_count--;
+
+	spvm_string imp = (spvm_string)calloc(word_count, sizeof(spvm_word));
 	spvm_string_read(state->code_current, imp, word_count);
 
 	state->results[id].type = spvm_result_type_extension;
-	state->results[id].extension_name = name_index;
+	state->results[id].name = imp;
 }
 
 /* 3.32.5 Mode-Setting Instructions */
@@ -381,6 +380,7 @@ void _spvm_context_create_setup_table(spvm_context_t ctx)
 	ctx->opcode_setup[SpvOpMemberDecorate] = spvm_setup_OpMemberDecorate;
 
 	ctx->opcode_setup[SpvOpExtInstImport] = spvm_setup_OpExtInstImport;
+	ctx->opcode_setup[SpvOpExtInst] = spvm_setup_constant;
 
 	ctx->opcode_setup[SpvOpMemoryModel] = spvm_setup_OpMemoryModel;
 	ctx->opcode_setup[SpvOpEntryPoint] = spvm_setup_OpEntryPoint;

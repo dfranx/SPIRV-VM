@@ -4,6 +4,10 @@
 #include <spvm/types.h>
 #include <spvm/image.h>
 
+#define MAX(x, y) (((x) > (y)) ? (x) : (y))
+#define MIN(x, y) (((x) < (y)) ? (x) : (y))
+#define CLAMP(x, minVal, maxVal) MIN(MAX((x), (minVal)), (maxVal))
+
 enum spvm_value_type
 {
 	spvm_value_type_void,

@@ -9,5 +9,5 @@ uniform sampler2D Noise2d;
 
 void main()
 {
-	outColor = texture(Noise2d, vec2(1, 1));
+	outColor = texture(Noise2d, vec2(0, round(uValue).x));
 }

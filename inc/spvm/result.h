@@ -4,6 +4,7 @@
 #include <spvm/types.h>
 #include <spvm/value.h>
 #include <spvm/spirv.h>
+#include <spvm/opcode.h>
 
 enum spvm_result_type {
 	spvm_result_type_none,
@@ -48,6 +49,7 @@ typedef struct spvm_result {
 
 	/* spvm_result_type_extension */
 	spvm_word extension_name; // index in the spvm_program::imports
+	spvm_ext_opcode_func* extension;
 
 	/* spvm_result_type_function_type / spvm_result_type_type (structure) */
 	spvm_word* param_type;

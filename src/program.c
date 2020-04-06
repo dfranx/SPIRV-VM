@@ -34,12 +34,6 @@ spvm_string spvm_program_add_extension(spvm_program_t prog, spvm_word length)
 	prog->extensions = (spvm_string*)realloc(prog->extensions, prog->extension_count * sizeof(spvm_string));
 	return (prog->extensions[prog->extension_count - 1] = (spvm_string)malloc(length * sizeof(spvm_word) + 1));
 }
-spvm_string spvm_program_add_import(spvm_program_t prog, spvm_word length)
-{
-	prog->import_count++;
-	prog->imports = (spvm_string*)realloc(prog->imports, prog->import_count * sizeof(spvm_string));
-	return (prog->imports[prog->import_count - 1] = (spvm_string)malloc(length * sizeof(spvm_word) + 1));
-}
 spvm_entry_point* spvm_program_create_entry_point(spvm_program_t prog)
 {
 	prog->entry_point_count++;
@@ -70,12 +64,6 @@ void spvm_program_delete(spvm_program_t prog)
 		free(prog->extensions[i]);
 	if (prog->extension_count)
 		free(prog->extensions);
-
-	// imports
-	for (spvm_word i = 0; i < prog->import_count; i++)
-		free(prog->imports[i]);
-	if (prog->import_count)
-		free(prog->imports);
 
 	// capabilities
 	if (prog->capability_count)

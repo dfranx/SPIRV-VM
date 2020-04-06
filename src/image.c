@@ -1,5 +1,6 @@
 #include <spvm/image.h>
 #include <string.h>
+#include <stdlib.h>
 
 void spvm_image_create(spvm_image_t img, float* data, int width, int height, int depth)
 {

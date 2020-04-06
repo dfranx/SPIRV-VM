@@ -13,9 +13,13 @@ src/value.c
 src/context.c
 src/opcode_execute.c
 src/opcode_setup.c
+src/ext/GLSL450.c
 )
 
 add_executable(SPIRVVM ${SOURCES})
-target_link_libraries(SPIRVVM m)
+
+if (UNIX)
+	target_link_libraries(SPIRVVM m)
+endif()
 
 target_include_directories(SPIRVVM PRIVATE inc)

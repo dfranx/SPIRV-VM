@@ -3,6 +3,7 @@
 #include <string.h>
 #include <spvm/context.h>
 #include <spvm/state.h>
+#include <spvm/ext/GLSL450.h>
 
 spvm_source load_source(const char* fname, size_t* src_size) {
 	FILE* f = fopen(fname, "rb");
@@ -33,7 +34,11 @@ int main()
 	spvm_program_t prog = spvm_program_create(ctx, spv, spv_length);
 	spvm_state_t state = spvm_state_create(prog);
 
-	float uValue[4] = { 0.2f, 0.3f, 0.4f, 0.5f };
+	spvm_ext_opcode_func glsl_ext_table = spvm_build_glsl450_ext();
+	spvm_result_t glsl_ext = spvm_state_get_result(state, "GLSL.std.450");
+	glsl_ext->extension = glsl_ext_table;
+
+	float uValue[4] = { 1.2f, 1.3f, 1.4f, 1.5f };
 	spvm_state_set_value_f(state, "uValue", uValue);
 
 	int sel = 1;
@@ -43,7 +48,7 @@ int main()
 		0.4f, 0.4f, 0.4f, 0.4f,
 		0.5f, 0.5f, 0.5f, 0.5f,
 		0.6f, 0.6f, 0.6f, 0.6f,
-		0.7f, 0.7f, 0.7f, 0.7f,
+		0.7f, 0.7f, 0.7f, 0.7f
 	};
 
 	spvm_image noise2d;
