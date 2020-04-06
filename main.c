@@ -49,7 +49,7 @@ int main()
 	float iTime = 1.0f;
 	spvm_state_set_value_f(state, "iTime", &iTime);
 
-	char outImg[IMG_WIDTH * IMG_HEIGHT * 4] = { 0 };
+	char* outImg = (char*)malloc(IMG_WIDTH * IMG_HEIGHT * 4 * sizeof(char));
 
 	spvm_source fnMain = spvm_state_get_result(state, "main");
 	for (int x = 0; x < IMG_WIDTH; x++)
@@ -70,6 +70,7 @@ int main()
 	spvm_state_delete(state);
 	spvm_program_delete(prog);
 	free(spv);
+	free(outImg);
 
 	spvm_context_deinitialize(ctx);
 

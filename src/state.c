@@ -40,7 +40,8 @@ spvm_result_t spvm_state_get_type_info(spvm_result_t res_list, spvm_result_t res
 		return spvm_state_get_type_info(res_list, &res_list[res->pointer]);
 	return res;
 }
-void spvm_state_call_function(spvm_result_t code, spvm_state_t state)
+
+void spvm_state_prepare(spvm_state_t state, spvm_result_t code)
 {
 	state->code_current = code->source_location;
 	state->current_function = code;
@@ -51,14 +52,45 @@ void spvm_state_call_function(spvm_result_t code, spvm_state_t state)
 		state->function_stack_info = (spvm_result_t*)malloc(state->function_stack_count * sizeof(spvm_result_t));
 		state->function_stack_returns = (spvm_word*)malloc(state->function_stack_count * sizeof(spvm_word));
 	}
-	
+
 	state->function_stack_current = 0;
 	state->function_stack[0] = code->source_location;
 	state->function_stack_info[0] = code;
 	state->did_jump = 0;
 	state->discarded = 0;
+}
 
-	spvm_program_t prog = state->owner;
+void spvm_state_step_opcode(spvm_state_t state)
+{
+	spvm_word opcode_data = SPVM_READ_WORD(state->code_current);
+	spvm_word word_count = ((opcode_data & (~SpvOpCodeMask)) >> SpvWordCountShift) - 1;
+	SpvOp opcode = (opcode_data & SpvOpCodeMask);
+	spvm_source cur_code = state->code_current;
+
+	if (opcode <= SPVM_OPCODE_TABLE_LENGTH && state->context->opcode_execute[opcode] != 0)
+		state->context->opcode_execute[opcode](word_count, state);
+
+	if (!state->did_jump)
+		state->code_current = (cur_code + word_count);
+	else state->did_jump = 0;
+}
+
+void spvm_state_step_into(spvm_state_t state)
+{
+	spvm_word ln = state->current_line;
+	while (ln == state->current_line)
+		spvm_state_step_opcode(state);
+}
+void spvm_state_jump_to(spvm_state_t state, spvm_word line)
+{
+	while (line != state->current_line && state->code_current != 0)
+		spvm_state_step_opcode(state);
+}
+
+void spvm_state_call_function(spvm_result_t code, spvm_state_t state)
+{
+	spvm_state_prepare(state, code);
+
 	spvm_source cur_code = state->code_current;
 
 	while (state->code_current)
@@ -75,6 +107,15 @@ void spvm_state_call_function(spvm_result_t code, spvm_state_t state)
 			state->code_current = (cur_code + word_count);
 		else state->did_jump = 0;
 	}
+}
+spvm_result_t spvm_state_get_owned_result(spvm_state_t state, spvm_result_t fn, const spvm_string str)
+{
+	for (spvm_word i = 0; i < state->owner->bound; i++)
+		if (state->results[i].name != NULL && strcmp(state->results[i].name, str) == 0 &&
+			state->results[i].variable_owner == fn)
+				return &state->results[i];
+
+	return NULL;
 }
 spvm_result_t spvm_state_get_result(spvm_state_t state, const spvm_string str)
 {

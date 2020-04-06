@@ -294,6 +294,7 @@ void spvm_setup_OpVariable(spvm_word word_count, spvm_state_t state)
 
 	state->results[id].type = spvm_result_type_variable;
 	state->results[id].storage_class = SPVM_READ_WORD(state->code_current);
+	state->results[id].variable_owner = state->current_function;
 
 	spvm_result_allocate_typed_value(&state->results[id], state->results, var_type);
 }
@@ -341,6 +342,7 @@ void spvm_setup_OpFunctionParameter(spvm_word word_count, spvm_state_t state)
 
 	state->results[id].pointer = var_type;
 	state->results[id].member_count = type_info->member_count;
+	state->results[id].variable_owner = state->current_function;
 }
 void spvm_setup_OpFunctionEnd(spvm_word word_count, spvm_state_t state)
 {

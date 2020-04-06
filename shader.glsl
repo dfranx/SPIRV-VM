@@ -63,33 +63,6 @@ float N2(vec2 p)
     return fract((p3.x + p3.y) * p3.z);
 }
 
-
-float DistLine(vec3 ro, vec3 rd, vec3 p) {
-	return length(cross(p-ro, rd));
-}
- 
-vec3 ClosestPoint(vec3 ro, vec3 rd, vec3 p) {
-    // returns the closest point on ray r to point p
-    return ro + max(0., dot(p-ro, rd))*rd;
-}
-
-float Remap(float a, float b, float c, float d, float t) {
-	return ((t-a)/(b-a))*(d-c)+c;
-}
-
-float BokehMask(vec3 ro, vec3 rd, vec3 p, float size, float blur) {
-	float d = DistLine(ro, rd, p);
-    float m = S(size, size*(1.-blur), d);
-    
-    #ifdef HIGH_QUALITY
-    m *= mix(0.7, 1., S(.8*size, size, d));
-    #endif
-    
-    return m;
-}
-
-
-
 float SawTooth(float t) {
     return cos(t+cos(t))+sin(2.*t)*.2+sin(4.*t)*.02;
 }
@@ -99,7 +72,6 @@ float DeltaSawTooth(float t) {
 }  
 
 vec2 GetDrops(vec2 uv, float seed, float m) {
-    
     float t = iTime+m*30.;
     vec2 o = vec2(0.);
     
@@ -199,122 +171,6 @@ void CameraSetup(vec2 uv, vec3 pos, vec3 lookat, float zoom, float m) {
     rd = normalize(i-ro);
 }
 
-vec3 HeadLights(float i, float t) {
-    float z = fract(-t*2.+i);
-    vec3 p = vec3(-.3, .1, z*40.);
-    float d = length(p-ro);
-    
-    float size = mix(.03, .05, S(.02, .07, z))*d;
-    float m = 0.;
-    float blur = .1;
-    m += BokehMask(ro, rd, p-vec3(.08, 0., 0.), size, blur);
-    m += BokehMask(ro, rd, p+vec3(.08, 0., 0.), size, blur);
-    
-    #ifdef HIGH_QUALITY
-    m += BokehMask(ro, rd, p+vec3(.1, 0., 0.), size, blur);
-    m += BokehMask(ro, rd, p-vec3(.1, 0., 0.), size, blur);
-    #endif
-    
-    float distFade = max(.01, pow(1.-z, 9.));
-    
-    blur = .8;
-    size *= 2.5;
-    float r = 0.;
-    r += BokehMask(ro, rd, p+vec3(-.09, -.2, 0.), size, blur);
-    r += BokehMask(ro, rd, p+vec3(.09, -.2, 0.), size, blur);
-    r *= distFade*distFade;
-    
-    return headLightCol*(m+r)*distFade;
-}
-
-
-vec3 TailLights(float i, float t) {
-    t = t*1.5+i;
-    
-    float id = floor(t)+i;
-    vec3 n = N31(id);
-    
-    float laneId = S(LANE_BIAS, LANE_BIAS+.01, n.y);
-    
-    float ft = fract(t);
-    
-    float z = 3.-ft*3.;						// distance ahead
-    
-    laneId *= S(.2, 1.5, z);				// get out of the way!
-    float lane = mix(.6, .3, laneId);
-    vec3 p = vec3(lane, .1, z);
-    float d = length(p-ro);
-    
-    float size = .05*d;
-    float blur = .1;
-    float m = BokehMask(ro, rd, p-vec3(.08, 0., 0.), size, blur) +
-    			BokehMask(ro, rd, p+vec3(.08, 0., 0.), size, blur);
-    
-    #ifdef HIGH_QUALITY
-    float bs = n.z*3.;						// start braking at random distance		
-    float brake = S(bs, bs+.01, z);
-    brake *= S(bs+.01, bs, z-.5*n.y);		// n.y = random brake duration
-    
-    m += (BokehMask(ro, rd, p+vec3(.1, 0., 0.), size, blur) +
-    	BokehMask(ro, rd, p-vec3(.1, 0., 0.), size, blur))*brake;
-    #endif
-    
-    float refSize = size*2.5;
-    m += BokehMask(ro, rd, p+vec3(-.09, -.2, 0.), refSize, .8);
-    m += BokehMask(ro, rd, p+vec3(.09, -.2, 0.), refSize, .8);
-    vec3 col = tailLightCol*m*ft; 
-    
-    float b = BokehMask(ro, rd, p+vec3(.12, 0., 0.), size, blur);
-    b += BokehMask(ro, rd, p+vec3(.12, -.2, 0.), refSize, .8)*.2;
-    
-    vec3 blinker = vec3(1., .7, .2);
-    blinker *= S(1.5, 1.4, z)*S(.2, .3, z);
-    blinker *= sat(sin(t*200.)*100.);
-    blinker *= laneId;
-    col += blinker*b;
-    
-    return col;
-}
-
-vec3 StreetLights(float i, float t) {
-	 float side = sign(rd.x);
-    float offset = max(side, 0.)*(1./16.);
-    float z = fract(i-t+offset); 
-    vec3 p = vec3(2.*side, 2., z*60.);
-    float d = length(p-ro);
-	float blur = .1;
-    vec3 rp = ClosestPoint(ro, rd, p);
-    float distFade = Remap(1., .7, .1, 1.5, 1.-pow(1.-z,6.));
-    distFade *= (1.-z);
-    float m = BokehMask(ro, rd, p, .05*d, blur)*distFade;
-    
-    return m*streetLightCol;
-}
-
-vec3 EnvironmentLights(float i, float t) {
-	float n = N(i+floor(t));
-    
-    float side = sign(rd.x);
-    float offset = max(side, 0.)*(1./16.);
-    float z = fract(i-t+offset+fract(n*234.));
-    float n2 = fract(n*100.);
-    vec3 p = vec3((3.+n)*side, n2*n2*n2*1., z*60.);
-    float d = length(p-ro);
-	float blur = .1;
-    vec3 rp = ClosestPoint(ro, rd, p);
-    float distFade = Remap(1., .7, .1, 1.5, 1.-pow(1.-z,6.));
-    float m = BokehMask(ro, rd, p, .05*d, blur);
-    m *= distFade*distFade*.5;
-    
-    m *= 1.-pow(sin(z*6.28*20.*n)*.5+.5, 20.);
-    vec3 randomCol = vec3(fract(n*-34.5), fract(n*4572.), fract(n*1264.));
-    vec3 col = mix(tailLightCol, streetLightCol, fract(n*-65.42));
-    col = mix(col, randomCol, n);
-    return m*col*.2;
-}
-
-
-
 void main( void ) {
 	float t = iTime;
     vec3 col = vec3(0.);
@@ -340,29 +196,5 @@ void main( void ) {
     uv.y += bumps*4.;
     CameraSetup(uv, pos, lookat, 2., 0);
    
-    t *= .03;
-    //t += mouse.x;
-    
-    const float stp = 1./8.;
-	
-	
-    for(float i=0.0; i<1.0; i+=stp) {
-       col += StreetLights(i, t);
-    }
-    
-    for(float i=0.0; i<1.0; i+=stp) {
-        float n = N(i+floor(t));
-    	col += HeadLights(i+n*stp*.7, t);
-    }
-    
-    for(float i=0.0; i<1.0; i+=stp) {
-       col += EnvironmentLights(i, t);
-    }
-
-    col += TailLights(0., t);
-    col += TailLights(.5, t);
-
-    col += sat(rd.y)*vec3(.6, .5, .9);
-
-    outColor = vec4(col, 1.);
+    outColor = vec4(rd, 1.);
 }

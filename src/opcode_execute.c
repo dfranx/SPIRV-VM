@@ -320,7 +320,11 @@ void spvm_execute_OpCompositeConstruct(spvm_word word_count, spvm_state_t state)
 
 	for (spvm_word i = 0; i < state->results[id].member_count; i++) {
 		spvm_word index = SPVM_READ_WORD(state->code_current);
-		state->results[id].members[i].value.s = state->results[index].members[0].value.s;
+		if (state->results[id].members[i].member_count == 0)
+			state->results[id].members[i].value.s = state->results[index].members[0].value.s;
+		else
+			for (spvm_word j = 0; j < state->results[index].member_count; j++)
+				state->results[id].members[i].members[j].value.s = state->results[index].members[j].value.s;
 	}
 }
 void spvm_execute_OpCompositeExtract(spvm_word word_count, spvm_state_t state)
