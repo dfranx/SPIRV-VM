@@ -466,29 +466,19 @@ void spvm_execute_GLSL450_SmoothStep(spvm_word type, spvm_word id, spvm_word wor
 			double edge0Val = state->results[edge0].members[i].value.d;
 			double edge1Val = state->results[edge1].members[i].value.d;
 
-			if (xVal <= edge0Val)
-				state->results[id].members[i].value.d = 0.0;
-			else if (xVal >= edge1Val)
-				state->results[id].members[i].value.d = 1.0;
-			else {
-				double t = CLAMP((xVal - edge0Val) / (edge1Val - edge0Val), 0.0, 1.0);
-				state->results[id].members[i].value.d = t * t * (3.0 - 2.0 * t);
-			}
+			xVal = CLAMP((xVal - edge0Val) / (edge1Val - edge0Val), 0.0, 1.0);
+
+			state->results[id].members[i].value.d = xVal * xVal * (3.0 - 2.0 * xVal);
 		}
 	else
 		for (spvm_word i = 0; i < state->results[id].member_count; i++) {
 			float xVal = state->results[x].members[i].value.f;
 			float edge0Val = state->results[edge0].members[i].value.f;
 			float edge1Val = state->results[edge1].members[i].value.f;
+			
+			xVal = CLAMP((xVal - edge0Val) / (edge1Val - edge0Val), 0.0f, 1.0f);
 
-			if (xVal <= edge0Val)
-				state->results[id].members[i].value.f = 0.0f;
-			else if (xVal >= edge1Val)
-				state->results[id].members[i].value.f = 1.0f;
-			else {
-				float t = CLAMP((xVal - edge0Val) / (edge1Val - edge0Val), 0.0f, 1.0f);
-				state->results[id].members[i].value.f = t * t * (3.0f - 2.0f * t);
-			}
+			state->results[id].members[i].value.f = xVal * xVal * (3.0f - 2.0f * xVal);
 		}
 }
 void spvm_execute_GLSL450_Fma(spvm_word type, spvm_word id, spvm_word word_count, spvm_state_t state)
@@ -560,7 +550,7 @@ void spvm_execute_GLSL450_Length(spvm_word type, spvm_word id, spvm_word word_co
 		state->results[id].members[0].value.d = sqrt(sum);
 	} else {
 		float sum = 0.0f;
-		for (spvm_word i = 0; i < state->results[id].member_count; i++)
+		for (spvm_word i = 0; i < state->results[x].member_count; i++)
 			sum += state->results[x].members[i].value.f * state->results[x].members[i].value.f;
 		state->results[id].members[0].value.f = sqrtf(sum);
 	}

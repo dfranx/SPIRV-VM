@@ -68,16 +68,12 @@ void spvm_member_allocate_typed_value(spvm_member_t val, spvm_result* results, s
 {
 	spvm_result_t type_info = spvm_state_get_type_info(results, &results[type]);
 
-	spvm_word mem_count = type_info->member_count;
-	if (mem_count == 0)
-		mem_count = 1;
-
-	spvm_member_allocate_value(val, mem_count);
+	spvm_member_allocate_value(val, type_info->member_count);
 	val->type = type;
 
 	if (type_info->value_type == spvm_value_type_struct) {
 		for (spvm_word i = 0; i < val->member_count; i++)
-			spvm_member_allocate_typed_value(&val->members[i], results, type_info->param_type[i]);
+			spvm_member_allocate_typed_value(&val->members[i], results, type_info->params[i]);
 	}
 	else if (type_info->value_type == spvm_value_type_matrix) {
 		for (spvm_word i = 0; i < val->member_count; i++)
@@ -93,16 +89,12 @@ void spvm_result_allocate_typed_value(spvm_result_t val, spvm_result* results, s
 {
 	spvm_result_t type_info = spvm_state_get_type_info(results, &results[type]);
 	
-	spvm_word mem_count = type_info->member_count;
-	if (mem_count == 0)
-		mem_count = 1;
-
-	spvm_result_allocate_value(val, mem_count);
+	spvm_result_allocate_value(val, type_info->member_count);
 	val->pointer = type;
 
 	if (type_info->value_type == spvm_value_type_struct) {
 		for (spvm_word i = 0; i < val->member_count; i++)
-			spvm_member_allocate_typed_value(&val->members[i], results, type_info->param_type[i]);
+			spvm_member_allocate_typed_value(&val->members[i], results, type_info->params[i]);
 	}
 	else if (type_info->value_type == spvm_value_type_matrix) {
 		for (spvm_word i = 0; i < val->member_count; i++)

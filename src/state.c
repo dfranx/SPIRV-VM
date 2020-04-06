@@ -12,6 +12,7 @@ spvm_state_t spvm_state_create(spvm_program_t prog)
 	state->current_file = NULL;
 	state->current_line = -1;
 	state->current_column = -1;
+	state->current_parameter = 0;
 	state->return_id = -1;
 	state->function_stack_count = 0;
 	state->function_stack_current = 0;
@@ -173,7 +174,7 @@ void spvm_state_delete(spvm_state_t state)
 
 		// member/parameter types
 		if (res->value_type == spvm_value_type_struct || res->type == spvm_result_type_function_type)
-			free(res->param_type);
+			free(res->params);
 
 		// decorations
 		if (res->decoration_count)

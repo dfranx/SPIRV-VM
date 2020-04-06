@@ -33,7 +33,6 @@ typedef struct spvm_result {
 	spvm_string name;
 	spvm_word pointer; // pointer to spvm_result
 	SpvStorageClass storage_class;
-	struct spvm_result* parameter_owner;
 
 	spvm_word member_name_count;
 	spvm_string* member_name;
@@ -51,8 +50,8 @@ typedef struct spvm_result {
 	spvm_word extension_name; // index in the spvm_program::imports
 	spvm_ext_opcode_func* extension;
 
-	/* spvm_result_type_function_type / spvm_result_type_type (structure) */
-	spvm_word* param_type;
+	/* spvm_result_type_function_type / spvm_result_type_type (structure) / spvm_result_type_function */
+	spvm_word* params;
 
 	/* function & label */
 	spvm_source source_location;

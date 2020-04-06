@@ -118,6 +118,7 @@ void spvm_setup_OpTypeVoid(spvm_word word_count, spvm_state_t state)
 	state->results[store_id].type = spvm_result_type_type;
 	state->results[store_id].value_type = spvm_value_type_void;
 	state->results[store_id].value_bitmask = 0;
+	state->results[store_id].member_count = 0;
 }
 void spvm_setup_OpTypeBool(spvm_word word_count, spvm_state_t state)
 {
@@ -125,6 +126,7 @@ void spvm_setup_OpTypeBool(spvm_word word_count, spvm_state_t state)
 	state->results[store_id].type = spvm_result_type_type;
 	state->results[store_id].value_type = spvm_value_type_bool;
 	state->results[store_id].value_bitmask = 1;
+	state->results[store_id].member_count = 1;
 }
 void spvm_setup_OpTypeInt(spvm_word word_count, spvm_state_t state)
 {
@@ -133,6 +135,7 @@ void spvm_setup_OpTypeInt(spvm_word word_count, spvm_state_t state)
 	state->results[store_id].value_type = spvm_value_type_int;
 	state->results[store_id].value_bitmask = SPVM_READ_WORD(state->code_current);
 	state->results[store_id].value_sign = SPVM_READ_WORD(state->code_current);
+	state->results[store_id].member_count = 1;
 }
 void spvm_setup_OpTypeFloat(spvm_word word_count, spvm_state_t state)
 {
@@ -140,6 +143,7 @@ void spvm_setup_OpTypeFloat(spvm_word word_count, spvm_state_t state)
 	state->results[store_id].type = spvm_result_type_type;
 	state->results[store_id].value_type = spvm_value_type_float;
 	state->results[store_id].value_bitmask = SPVM_READ_WORD(state->code_current);
+	state->results[store_id].member_count = 1;
 }
 void spvm_setup_OpTypeVector(spvm_word word_count, spvm_state_t state)
 {
@@ -174,6 +178,7 @@ void spvm_setup_OpTypeSampledImage(spvm_word word_count, spvm_state_t state)
 	state->results[id].type = spvm_result_type_type;
 	state->results[id].value_type = spvm_value_type_sampled_image;
 	state->results[id].pointer = SPVM_READ_WORD(state->code_current);
+	state->results[id].member_count = 1;
 }
 void spvm_setup_OpTypeArray(spvm_word word_count, spvm_state_t state)
 {
@@ -192,9 +197,9 @@ void spvm_setup_OpTypeStruct(spvm_word word_count, spvm_state_t state)
 	state->results[id].value_type = spvm_value_type_struct;
 	state->results[id].member_count = mcnt;
 
-	state->results[id].param_type = (spvm_word*)malloc(sizeof(spvm_word) * mcnt);
+	state->results[id].params = (spvm_word*)malloc(sizeof(spvm_word) * mcnt);
 	for (spvm_word i = 0; i < mcnt; i++)
-		state->results[id].param_type[i] = SPVM_READ_WORD(state->code_current);
+		state->results[id].params[i] = SPVM_READ_WORD(state->code_current);
 }
 void spvm_setup_OpTypePointer(spvm_word word_count, spvm_state_t state)
 {
@@ -214,10 +219,10 @@ void spvm_setup_OpTypeFunction(spvm_word word_count, spvm_state_t state)
 	state->results[id].type = spvm_result_type_function_type;
 	state->results[id].pointer = return_id;
 	state->results[id].member_count = param_count;
-	state->results[id].param_type = (spvm_word*)malloc(param_count * sizeof(spvm_word));
+	state->results[id].params = (spvm_word*)malloc(param_count * sizeof(spvm_word));
 
 	for (spvm_word i = 0; i < param_count; i++)
-		state->results[id].param_type[i] = SPVM_READ_WORD(state->code_current);
+		state->results[id].params[i] = SPVM_READ_WORD(state->code_current);
 }
 
 /* 3.32.7 Constant-Creation Instructions */
@@ -316,6 +321,10 @@ void spvm_setup_OpFunction(spvm_word word_count, spvm_state_t state)
 	state->results[store_id].source_location = state->code_current;
 	state->results[info].source_location = state->code_current;
 
+	state->current_parameter = 0;
+	state->results[store_id].member_count = state->results[info].member_count;
+	state->results[store_id].params = (spvm_word*)calloc(state->results[store_id].member_count, sizeof(spvm_word));
+
 	state->current_function = &state->results[store_id];
 }
 void spvm_setup_OpFunctionParameter(spvm_word word_count, spvm_state_t state)
@@ -325,7 +334,8 @@ void spvm_setup_OpFunctionParameter(spvm_word word_count, spvm_state_t state)
 
 	state->results[id].type = spvm_result_type_function_parameter;
 	state->results[id].storage_class = SPVM_READ_WORD(state->code_current);
-	state->results[id].parameter_owner = state->current_function;
+	state->current_function->params[state->current_parameter] = id;
+	state->current_parameter++;
 
 	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[var_type]);
 

@@ -15,6 +15,8 @@ typedef struct {
 
 	spvm_result_t current_function;
 
+	spvm_word current_parameter;
+
 	spvm_word function_stack_current;
 	spvm_word function_stack_count;
 	spvm_source* function_stack;

@@ -143,18 +143,7 @@ void spvm_execute_OpFunctionCall(spvm_word word_count, spvm_state_t state)
 
 	for (spvm_word i = 0; i < argc; i++) {
 		spvm_word arg_id = SPVM_READ_WORD(state->code_current);
-		spvm_result_t arg = NULL;
-
-		spvm_word cur_arg = 0;
-		for (spvm_word j = 0; j < state->owner->bound; j++) {
-			if (state->results[j].parameter_owner == next_func) {
-				if (i == cur_arg) {
-					state->results[j].members = state->results[arg_id].members;
-					break;
-				}
-				cur_arg++;
-			}
-		}
+		state->results[next_func->params[i]].members = state->results[arg_id].members;
 	}
 
 	spvm_state_push_function_stack(state, next_func, id);
