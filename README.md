@@ -1,5 +1,5 @@
 # SPIRV-VM
-**SPIRV-VM** is a virtual machine for executing SPIR-V shaders. It is written in C, has no dependencies & it is licensed under MIT license.
+**SPIRV-VM** is a virtual machine for executing SPIR-V shaders. It is written in C, has no dependencies & is licensed under MIT license.
 Both **HLSL & GLSL shaders** can be compiled to SPIR-V using tools such as [glslangValidator](https://github.com/KhronosGroup/glslang) and [shaderc](https://github.com/google/shaderc) which means
 that you can use this library to debug shaders.
 
@@ -98,14 +98,22 @@ spvm_context_deinitialize(ctx);
 ```
 
 ## How to link
-If you are using CMake add this line to your `CMakeLists.txt`:
+If you are using CMake add these lines to your `CMakeLists.txt` file:
 ```
 add_subdirectory(./path/to/your/SPIRV-VM)
+target_include_directories(example PRIVATE ./path/to/your/SPIRV-VM/inc)
 ```
 
 ## TODO
 - only 2D images are currently supported
 - only three image instructions are implemented: OpTypeImage, OpTypeSampledImage and OpImageSampleImplicitLod
+
+## Support & contact
+Support the development of this project on Patreon: [<img width="120" src="https://c5.patreon.com/external/logo/become_a_patron_button@2x.png">](https://www.patreon.com/dfranx)
+
+You can support the development of this project via **PayPal**: [<img src="https://www.paypalobjects.com/webstatic/en_US/i/buttons/pp-acceptance-medium.png" alt="Buy now with PayPal" />](https://paypal.me/dfranx) 
+
+My e-mail address: **dfranx at shadered dot org**
 
 ## LICENSE
 SPIRV-VM is licensed under MIT license. See [LICENSE](./LICENSE) for more details.
