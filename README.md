@@ -35,7 +35,7 @@ if (glsl_std_450)
 ```
 
 
-Before debugging your shader, you have to set up global and uniform variables.
+Before debugging your shader, you have to initialize global and uniform variables.
 
 To set a single uniform:
 ```c
@@ -51,14 +51,14 @@ spvm_result_t uBlock = spvm_state_get_result(state, "uBlock");
 
 // then set its members
 float timeData = 0.5f;
-spvm_member_t uBlock_time = spvm_state_get_object_member(state, uBlock, "time");
+spvm_member_t uBlock_time = spvm_state_get_object_member(state, uBlock, "time"); // uBlock.time
 spvm_member_set_value_f(uBlock_time->members, uBlock_time->member_count, &timeData);
 ```
 
 To bind textures:
 ```c
 spvm_image noise2D_data;
-spvm_image_create(&noise2D_data, image_data, image_width, image_height, image_depth);
+spvm_image_create(&noise2D_data, image_data, image_width, image_height, 1);
 spvm_result_t noise2D = spvm_state_get_result(state, "noise2D");
 noise2D->members[0].image_data = &noise2D_data;
 ```
