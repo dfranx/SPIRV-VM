@@ -8,10 +8,8 @@ First, create a SPIRV-VM context:
 ```c
 spvm_context_t ctx = spvm_context_initialize();
 ```
-This structure holds an opcode table and is necessary.
 
-
-After that you can load your SPIR-V binary file:
+Load your SPIR-V binary file:
 ```c
 size_t spv_length = 0;
 spvm_source spv = load_source("shader.spv", &spv_length);
