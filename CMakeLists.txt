@@ -3,7 +3,6 @@ project(SPIRVVM)
 
 # include_directories(inc)
 set(SOURCES 
-main.c
 src/program.c
 src/types.c
 src/image.c
@@ -16,7 +15,7 @@ src/opcode_setup.c
 src/ext/GLSL450.c
 )
 
-add_executable(SPIRVVM ${SOURCES})
+add_library(SPIRVVM ${SOURCES})
 
 if (UNIX)
 	target_link_libraries(SPIRVVM m)

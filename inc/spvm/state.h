@@ -34,7 +34,7 @@ typedef spvm_state* spvm_state_t;
 spvm_result_t spvm_state_get_type_info(spvm_result_t res_list, spvm_result_t res);
 
 spvm_state_t spvm_state_create(spvm_program_t prog);
-void spvm_state_call_function(spvm_result_t code, spvm_state_t state);
+void spvm_state_call_function(spvm_state_t state);
 void spvm_state_prepare(spvm_state_t state, spvm_result_t code);
 void spvm_state_step_opcode(spvm_state_t state);
 void spvm_state_step_into(spvm_state_t state);

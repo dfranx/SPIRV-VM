@@ -34,31 +34,33 @@ int main()
 	size_t spv_length = 0;
 	spvm_source spv = load_source("shader.spv", &spv_length);
 
-	// create the program and a state
+	// create a program and a state
 	spvm_program_t prog = spvm_program_create(ctx, spv, spv_length);
 	spvm_state_t state = spvm_state_create(prog);
 
 	// load extension
 	spvm_ext_opcode_func* glsl_ext_data = spvm_build_glsl450_ext();
 	spvm_result_t glsl_std_450 = spvm_state_get_result(state, "GLSL.std.450");
-	glsl_std_450->extension = glsl_ext_data;
+	if (glsl_std_450)
+		glsl_std_450->extension = glsl_ext_data;
 
 	// get uBlock
 	spvm_result_t uBlock = spvm_state_get_result(state, "uBlock");
 
-	// set uBlock.iTime
+	// set uBlock.time
 	float timeData = 0.5f;
 	spvm_member_t uBlock_time = spvm_state_get_object_member(state, uBlock, "time");
 	spvm_member_set_value_f(uBlock_time->members, uBlock_time->member_count, &timeData);
 
-	// set uBlock.iResolution
+	// set uBlock.info
 	float infoData[2] = { 0.2f, 0.8f };
 	spvm_member_t uBlock_info = spvm_state_get_object_member(state, uBlock, "info");
 	spvm_member_set_value_f(uBlock_info->members, uBlock_info->member_count, infoData);
 
 	// call main
 	spvm_source fnMain = spvm_state_get_result(state, "main");
-	spvm_state_call_function(fnMain, state);
+	spvm_state_prepare(state, fnMain);
+	spvm_state_call_function(state);
 
 	// get outColor
 	spvm_result_t outColor = spvm_state_get_result(state, "outColor");
@@ -72,6 +74,7 @@ int main()
 	// free memory
 	spvm_state_delete(state);
 	spvm_program_delete(prog);
+	free(glsl_ext_data);
 	free(spv);
 
 	spvm_context_deinitialize(ctx);

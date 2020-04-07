@@ -85,10 +85,8 @@ void spvm_state_jump_to(spvm_state_t state, spvm_word line)
 	while (line != state->current_line && state->code_current != 0)
 		spvm_state_step_opcode(state);
 }
-void spvm_state_call_function(spvm_result_t code, spvm_state_t state)
+void spvm_state_call_function(spvm_state_t state)
 {
-	spvm_state_prepare(state, code);
-
 	spvm_source cur_code = state->code_current;
 
 	while (state->code_current)
