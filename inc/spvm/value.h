@@ -46,4 +46,7 @@ typedef spvm_member* spvm_member_t;
 void spvm_member_free(spvm_member_t source, spvm_word value_count);
 void spvm_member_memcpy(spvm_member_t target, spvm_member_t source, spvm_word value_count);
 
+void spvm_member_set_value_f(spvm_member_t mems, size_t mem_count, float* f);
+void spvm_member_set_value_i(spvm_member_t mems, size_t mem_count,  int* d);
+
 #endif // __SPIRV_VM_VALUE_H__

@@ -33,7 +33,7 @@ typedef struct spvm_result {
 	spvm_string name;
 	spvm_word pointer; // pointer to spvm_result
 	SpvStorageClass storage_class;
-	struct spvm_result* variable_owner;
+	struct spvm_result* owner;
 
 	spvm_word member_name_count;
 	spvm_string* member_name;

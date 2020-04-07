@@ -74,11 +74,10 @@ void spvm_state_step_opcode(spvm_state_t state)
 		state->code_current = (cur_code + word_count);
 	else state->did_jump = 0;
 }
-
 void spvm_state_step_into(spvm_state_t state)
 {
 	spvm_word ln = state->current_line;
-	while (ln == state->current_line)
+	while (ln == state->current_line && state->code_current)
 		spvm_state_step_opcode(state);
 }
 void spvm_state_jump_to(spvm_state_t state, spvm_word line)
@@ -86,7 +85,6 @@ void spvm_state_jump_to(spvm_state_t state, spvm_word line)
 	while (line != state->current_line && state->code_current != 0)
 		spvm_state_step_opcode(state);
 }
-
 void spvm_state_call_function(spvm_result_t code, spvm_state_t state)
 {
 	spvm_state_prepare(state, code);
@@ -108,11 +106,12 @@ void spvm_state_call_function(spvm_result_t code, spvm_state_t state)
 		else state->did_jump = 0;
 	}
 }
-spvm_result_t spvm_state_get_owned_result(spvm_state_t state, spvm_result_t fn, const spvm_string str)
+
+spvm_result_t spvm_state_get_local_result(spvm_state_t state, spvm_result_t fn, const spvm_string str)
 {
 	for (spvm_word i = 0; i < state->owner->bound; i++)
 		if (state->results[i].name != NULL && strcmp(state->results[i].name, str) == 0 &&
-			state->results[i].variable_owner == fn)
+			state->results[i].owner == fn)
 				return &state->results[i];
 
 	return NULL;
@@ -125,37 +124,21 @@ spvm_result_t spvm_state_get_result(spvm_state_t state, const spvm_string str)
 
 	return NULL;
 }
-
-void spvm_state_set_value_f(spvm_state_t state, const spvm_string name, float* f)
+spvm_member_t spvm_state_get_object_member(spvm_state_t state, spvm_result_t var, const spvm_string member_name)
 {
-	spvm_result_t var = spvm_state_get_result(state, name);
+	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[var->pointer]);
+	spvm_word index = -1;
 
-	if (var != NULL) {
-		spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[var->pointer]);
-		if (type_info->value_type == spvm_value_type_matrix) {
-			for (spvm_word i = 0; i < var->member_count; i++) {
-				spvm_member_t mem = &var->members[i];
-				for (spvm_word j = 0; j < mem->member_count; j++)
-					mem->members[j].value.f = f[i * mem->member_count + j];
-			}
-		} else {
-			spvm_member_t mems = var->members;
-			for (spvm_word j = 0; j < var->member_count; j++)
-				mems[j].value.f = f[j];
+	for (spvm_word i = 0; i < type_info->member_name_count; i++)
+		if (strcmp(type_info->member_name[i], member_name) == 0) {
+			index = i;
+			break;
 		}
-	}
-}
-void spvm_state_set_value_i(spvm_state_t state, const spvm_string name, int* d)
-{
-	spvm_result_t var = spvm_state_get_result(state, name);
 
-	if (var != NULL) {
-		spvm_member_t mems = var->members;
-		for (spvm_word j = 0; j < var->member_count; j++)
-			mems[j].value.s = d[j];
-	}
+	if (index == -1)
+		return NULL;
+	return &var->members[index];
 }
-
 
 void spvm_state_push_function_stack(spvm_state_t state, spvm_result_t func, spvm_word func_res_id)
 {
