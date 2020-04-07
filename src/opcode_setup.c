@@ -477,6 +477,7 @@ void _spvm_context_create_setup_table(spvm_context_t ctx)
 	ctx->opcode_setup[SpvOpLogicalAnd] = spvm_setup_constant;
 	ctx->opcode_setup[SpvOpLogicalOr] = spvm_setup_constant;
 	ctx->opcode_setup[SpvOpLogicalNot] = spvm_setup_constant;
+	ctx->opcode_setup[SpvOpSelect] = spvm_setup_constant;
 	ctx->opcode_setup[SpvOpIEqual] = spvm_setup_constant;
 	ctx->opcode_setup[SpvOpINotEqual] = spvm_setup_constant;
 	ctx->opcode_setup[SpvOpUGreaterThan] = spvm_setup_constant;

@@ -699,11 +699,15 @@ void spvm_execute_OpDot(spvm_word word_count, spvm_state_t state)
 	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[type]);
 
 	if (type_info->value_bitmask > 32) {
-		for (spvm_word i = 0; i < state->results[id].member_count; i++)
-			state->results[id].members[i].value.d += state->results[vec1].members[i].value.d * state->results[vec2].members[i].value.d;
+		double dot = 0.0;
+		for (spvm_word i = 0; i < state->results[vec1].member_count; i++)
+			dot += state->results[vec1].members[i].value.d * state->results[vec2].members[i].value.d;
+		state->results[id].members[0].value.d = dot;
 	} else {
-		for (spvm_word i = 0; i < state->results[id].member_count; i++)
-			state->results[id].members[i].value.f += state->results[vec1].members[i].value.f * state->results[vec2].members[i].value.f;
+		float dot = 0.0f;
+		for (spvm_word i = 0; i < state->results[vec1].member_count; i++)
+			dot += state->results[vec1].members[i].value.f * state->results[vec2].members[i].value.f;
+		state->results[id].members[0].value.f = dot;
 	}
 }
 
@@ -839,6 +843,20 @@ void spvm_execute_OpLogicalNot(spvm_word word_count, spvm_state_t state)
 
 	for (spvm_word i = 0; i < state->results[id].member_count; i++)
 		state->results[id].members[i].value.b = !state->results[op1].members[i].value.b;
+}
+void spvm_execute_OpSelect(spvm_word word_count, spvm_state_t state)
+{
+	SPVM_SKIP_WORD(state->code_current);
+	spvm_word id = SPVM_READ_WORD(state->code_current);
+	spvm_word cond = SPVM_READ_WORD(state->code_current);
+	spvm_word obj1 = SPVM_READ_WORD(state->code_current);
+	spvm_word obj2 = SPVM_READ_WORD(state->code_current);
+
+	// TODO: vectors
+	spvm_byte condValue = state->results[id].members[0].value.b;
+	spvm_word obj = condValue ? obj1 : obj2;
+
+	spvm_member_memcpy(state->results[id].members, state->results[obj].members, state->results[obj].member_count);
 }
 void spvm_execute_OpIEqual(spvm_word word_count, spvm_state_t state)
 {
@@ -1163,6 +1181,7 @@ void _spvm_context_create_execute_table(spvm_context_t ctx)
 	ctx->opcode_execute[SpvOpLogicalAnd] = spvm_execute_OpLogicalAnd;
 	ctx->opcode_execute[SpvOpLogicalOr] = spvm_execute_OpLogicalOr;
 	ctx->opcode_execute[SpvOpLogicalNot] = spvm_execute_OpLogicalNot;
+	ctx->opcode_execute[SpvOpSelect] = spvm_execute_OpSelect;
 	ctx->opcode_execute[SpvOpIEqual] = spvm_execute_OpIEqual;
 	ctx->opcode_execute[SpvOpINotEqual] = spvm_execute_OpINotEqual;
 	ctx->opcode_execute[SpvOpUGreaterThan] = spvm_execute_OpUGreaterThan;

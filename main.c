@@ -28,8 +28,8 @@ spvm_source load_source(const char* fname, size_t* src_size) {
 
 	return ret;
 }
-#define IMG_WIDTH 1920
-#define IMG_HEIGHT 1080
+#define IMG_WIDTH 512
+#define IMG_HEIGHT 288
 int main()
 {
 	spvm_context_t ctx = spvm_context_initialize();
@@ -54,13 +54,15 @@ int main()
 	spvm_source fnMain = spvm_state_get_result(state, "main");
 	for (int x = 0; x < IMG_WIDTH; x++)
 		for (int y = 0; y < IMG_HEIGHT; y++) {
-			float gl_FragCoord[4] = { x, y, 0.0f, 1.0f };
+			int actualY = IMG_HEIGHT - y - 1;
+
+			float gl_FragCoord[4] = { x, actualY, 0.0f, 1.0f };
 			spvm_state_set_value_f(state, "gl_FragCoord", gl_FragCoord);
 			spvm_state_call_function(fnMain, state);
 
 			spvm_result_t outColor = spvm_state_get_result(state, "outColor");
 			for (int i = 0; i < outColor->member_count; i++)
-				outImg[(y * IMG_WIDTH + x) * 4 + i] = outColor->members[i].value.f * 255;
+				outImg[(y * IMG_WIDTH + x) * 4 + i] = fabsf(outColor->members[i].value.f) * 255;
 		}
 
 	stbi_write_png("out.png", IMG_WIDTH, IMG_HEIGHT, 4, outImg, IMG_WIDTH * 4);
