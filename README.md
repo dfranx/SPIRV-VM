@@ -104,16 +104,17 @@ add_subdirectory(./path/to/your/SPIRV-VM)
 target_include_directories(example PRIVATE ./path/to/your/SPIRV-VM/inc)
 ```
 
+If you just want to build this project, run these two commands:
+```
+cmake .
+make
+```
+
 ## TODO
 - only 2D images are currently supported
 - only three image instructions are implemented: OpTypeImage, OpTypeSampledImage and OpImageSampleImplicitLod
 
-## Support & contact
-Support the development of this project on Patreon: [<img width="120" src="https://c5.patreon.com/external/logo/become_a_patron_button@2x.png">](https://www.patreon.com/dfranx)
-
-You can support the development of this project via **PayPal**: [<img src="https://www.paypalobjects.com/webstatic/en_US/i/buttons/pp-acceptance-medium.png" alt="Buy now with PayPal" />](https://paypal.me/dfranx) 
-
-My e-mail address: **dfranx at shadered dot org**
+Contact me through this e-mail address: **dfranx at shadered dot org**
 
 ## LICENSE
 SPIRV-VM is licensed under MIT license. See [LICENSE](./LICENSE) for more details.
