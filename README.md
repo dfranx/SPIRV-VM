@@ -81,7 +81,7 @@ printf("\n");
 Use `spvm_state_get_local_result()` function if you are stepping through code line by line and want to get local variable's value.
 Example:
 ```c
-spvm_result_t a = spvm_state_get_local_result(state, "a");
+spvm_result_t a = spvm_state_get_local_result(state, fnMain, "a");
 printf("a = %.2f\n", a->members[0].value.f);
 ```
 
