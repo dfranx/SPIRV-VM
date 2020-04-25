@@ -380,49 +380,49 @@ void spvm_execute_GLSL450_MatrixInverse(spvm_word type, spvm_word id, spvm_word 
 		res[2][1] = -(m[0][0] * m[2][1] - m[2][0] * m[0][1]) * invdet;
 		res[2][2] = +(m[0][0] * m[1][1] - m[1][0] * m[0][1]) * invdet;
 	} else if (mtype == 4) {
-		double Coef00 = m[2][2] * m[3][3] - m[3][2] * m[2][3];
-		double Coef02 = m[1][2] * m[3][3] - m[3][2] * m[1][3];
-		double Coef03 = m[1][2] * m[2][3] - m[2][2] * m[1][3];
+		double c00 = m[2][2] * m[3][3] - m[3][2] * m[2][3];
+		double c02 = m[1][2] * m[3][3] - m[3][2] * m[1][3];
+		double c03 = m[1][2] * m[2][3] - m[2][2] * m[1][3];
 
-		double Coef04 = m[2][1] * m[3][3] - m[3][1] * m[2][3];
-		double Coef06 = m[1][1] * m[3][3] - m[3][1] * m[1][3];
-		double Coef07 = m[1][1] * m[2][3] - m[2][1] * m[1][3];
+		double c04 = m[2][1] * m[3][3] - m[3][1] * m[2][3];
+		double c06 = m[1][1] * m[3][3] - m[3][1] * m[1][3];
+		double c07 = m[1][1] * m[2][3] - m[2][1] * m[1][3];
 
-		double Coef08 = m[2][1] * m[3][2] - m[3][1] * m[2][2];
-		double Coef10 = m[1][1] * m[3][2] - m[3][1] * m[1][2];
-		double Coef11 = m[1][1] * m[2][2] - m[2][1] * m[1][2];
+		double c08 = m[2][1] * m[3][2] - m[3][1] * m[2][2];
+		double c10 = m[1][1] * m[3][2] - m[3][1] * m[1][2];
+		double c11 = m[1][1] * m[2][2] - m[2][1] * m[1][2];
 
-		double Coef12 = m[2][0] * m[3][3] - m[3][0] * m[2][3];
-		double Coef14 = m[1][0] * m[3][3] - m[3][0] * m[1][3];
-		double Coef15 = m[1][0] * m[2][3] - m[2][0] * m[1][3];
+		double c12 = m[2][0] * m[3][3] - m[3][0] * m[2][3];
+		double c14 = m[1][0] * m[3][3] - m[3][0] * m[1][3];
+		double c15 = m[1][0] * m[2][3] - m[2][0] * m[1][3];
 
-		double Coef16 = m[2][0] * m[3][2] - m[3][0] * m[2][2];
-		double Coef18 = m[1][0] * m[3][2] - m[3][0] * m[1][2];
-		double Coef19 = m[1][0] * m[2][2] - m[2][0] * m[1][2];
+		double c16 = m[2][0] * m[3][2] - m[3][0] * m[2][2];
+		double c18 = m[1][0] * m[3][2] - m[3][0] * m[1][2];
+		double c19 = m[1][0] * m[2][2] - m[2][0] * m[1][2];
 
-		double Coef20 = m[2][0] * m[3][1] - m[3][0] * m[2][1];
-		double Coef22 = m[1][0] * m[3][1] - m[3][0] * m[1][1];
-		double Coef23 = m[1][0] * m[2][1] - m[2][0] * m[1][1];
+		double c20 = m[2][0] * m[3][1] - m[3][0] * m[2][1];
+		double c22 = m[1][0] * m[3][1] - m[3][0] * m[1][1];
+		double c23 = m[1][0] * m[2][1] - m[2][0] * m[1][1];
 
-		res[0][0] = +(m[1][1] * Coef00 - m[1][2] * Coef04 + m[1][3] * Coef08) * invdet;
-		res[0][1] = -(m[0][1] * Coef00 - m[0][2] * Coef04 + m[0][3] * Coef08) * invdet;
-		res[0][2] = +(m[0][1] * Coef02 - m[0][2] * Coef06 + m[0][3] * Coef10) * invdet;
-		res[0][3] = -(m[0][1] * Coef03 - m[0][2] * Coef07 + m[0][3] * Coef11) * invdet;
+		res[0][0] = +(m[1][1] * c00 - m[1][2] * c04 + m[1][3] * c08) * invdet;
+		res[0][1] = -(m[0][1] * c00 - m[0][2] * c04 + m[0][3] * c08) * invdet;
+		res[0][2] = +(m[0][1] * c02 - m[0][2] * c06 + m[0][3] * c10) * invdet;
+		res[0][3] = -(m[0][1] * c03 - m[0][2] * c07 + m[0][3] * c11) * invdet;
 
-		res[1][0] = -(m[1][0] * Coef00 - m[1][2] * Coef12 + m[1][3] * Coef16) * invdet;
-		res[1][1] = +(m[0][0] * Coef00 - m[0][2] * Coef12 + m[0][3] * Coef16) * invdet;
-		res[1][2] = -(m[0][0] * Coef02 - m[0][2] * Coef14 + m[0][3] * Coef18) * invdet;
-		res[1][3] = +(m[0][0] * Coef03 - m[0][2] * Coef15 + m[0][3] * Coef19) * invdet;
+		res[1][0] = -(m[1][0] * c00 - m[1][2] * c12 + m[1][3] * c16) * invdet;
+		res[1][1] = +(m[0][0] * c00 - m[0][2] * c12 + m[0][3] * c16) * invdet;
+		res[1][2] = -(m[0][0] * c02 - m[0][2] * c14 + m[0][3] * c18) * invdet;
+		res[1][3] = +(m[0][0] * c03 - m[0][2] * c15 + m[0][3] * c19) * invdet;
 
-		res[2][0] = +(m[1][0] * Coef04 - m[1][1] * Coef12 + m[1][3] * Coef20) * invdet;
-		res[2][1] = -(m[0][0] * Coef04 - m[0][1] * Coef12 + m[0][3] * Coef20) * invdet;
-		res[2][2] = +(m[0][0] * Coef06 - m[0][1] * Coef14 + m[0][3] * Coef22) * invdet;
-		res[2][3] = -(m[0][0] * Coef07 - m[0][1] * Coef15 + m[0][3] * Coef23) * invdet;
+		res[2][0] = +(m[1][0] * c04 - m[1][1] * c12 + m[1][3] * c20) * invdet;
+		res[2][1] = -(m[0][0] * c04 - m[0][1] * c12 + m[0][3] * c20) * invdet;
+		res[2][2] = +(m[0][0] * c06 - m[0][1] * c14 + m[0][3] * c22) * invdet;
+		res[2][3] = -(m[0][0] * c07 - m[0][1] * c15 + m[0][3] * c23) * invdet;
 
-		res[3][0] = -(m[1][0] * Coef08 - m[1][1] * Coef16 + m[1][2] * Coef20) * invdet;
-		res[3][1] = +(m[0][0] * Coef08 - m[0][1] * Coef16 + m[0][2] * Coef20) * invdet;
-		res[3][2] = -(m[0][0] * Coef10 - m[0][1] * Coef18 + m[0][2] * Coef22) * invdet;
-		res[3][3] = +(m[0][0] * Coef11 - m[0][1] * Coef19 + m[0][2] * Coef23) * invdet;
+		res[3][0] = -(m[1][0] * c08 - m[1][1] * c16 + m[1][2] * c20) * invdet;
+		res[3][1] = +(m[0][0] * c08 - m[0][1] * c16 + m[0][2] * c20) * invdet;
+		res[3][2] = -(m[0][0] * c10 - m[0][1] * c18 + m[0][2] * c22) * invdet;
+		res[3][3] = +(m[0][0] * c11 - m[0][1] * c19 + m[0][2] * c23) * invdet;
 	}
 
 	if (type_info->value_bitcount > 32)
