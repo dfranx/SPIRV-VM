@@ -2,6 +2,7 @@
 #include <spvm/state.h>
 #include "GLSL.std.450.h"
 #include <math.h>
+#include <intrin.h>
 
 #ifndef M_PI
 #    define M_PI 3.14159265358979323846
@@ -13,7 +14,7 @@ void spvm_execute_GLSL450_Round(spvm_word type, spvm_word id, spvm_word word_cou
 
 	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[type]);
 
-	if (type_info->value_bitmask > 32)
+	if (type_info->value_bitcount > 32)
 		for (spvm_word i = 0; i < state->results[id].member_count; i++)
 			state->results[id].members[i].value.d = round(state->results[x].members[i].value.d);
 	else
@@ -26,7 +27,7 @@ void spvm_execute_GLSL450_RoundEven(spvm_word type, spvm_word id, spvm_word word
 
 	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[type]);
 
-	if (type_info->value_bitmask > 32)
+	if (type_info->value_bitcount > 32)
 		for (spvm_word i = 0; i < state->results[id].member_count; i++)
 			state->results[id].members[i].value.d = round(state->results[x].members[i].value.d * 0.5) + 0.5;
 	else
@@ -39,7 +40,7 @@ void spvm_execute_GLSL450_Trunc(spvm_word type, spvm_word id, spvm_word word_cou
 
 	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[type]);
 
-	if (type_info->value_bitmask > 32)
+	if (type_info->value_bitcount > 32)
 		for (spvm_word i = 0; i < state->results[id].member_count; i++)
 			state->results[id].members[i].value.d = trunc(state->results[x].members[i].value.d);
 	else
@@ -52,7 +53,7 @@ void spvm_execute_GLSL450_FAbs(spvm_word type, spvm_word id, spvm_word word_coun
 
 	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[type]);
 
-	if (type_info->value_bitmask > 32)
+	if (type_info->value_bitcount > 32)
 		for (spvm_word i = 0; i < state->results[id].member_count; i++)
 			state->results[id].members[i].value.d = fabs(state->results[x].members[i].value.d);
 	else
@@ -72,7 +73,7 @@ void spvm_execute_GLSL450_FSign(spvm_word type, spvm_word id, spvm_word word_cou
 
 	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[type]);
 
-	if (type_info->value_bitmask > 32)
+	if (type_info->value_bitcount > 32)
 		for (spvm_word i = 0; i < state->results[id].member_count; i++) {
 			double d = state->results[x].members[i].value.d;
 			state->results[id].members[i].value.d = (d < 0.0) ? -1 : (d > 0.0 ? 1 : 0);
@@ -98,7 +99,7 @@ void spvm_execute_GLSL450_Floor(spvm_word type, spvm_word id, spvm_word word_cou
 
 	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[type]);
 
-	if (type_info->value_bitmask > 32)
+	if (type_info->value_bitcount > 32)
 		for (spvm_word i = 0; i < state->results[id].member_count; i++)
 			state->results[id].members[i].value.d = floor(state->results[x].members[i].value.d);
 	else
@@ -111,7 +112,7 @@ void spvm_execute_GLSL450_Ceil(spvm_word type, spvm_word id, spvm_word word_coun
 
 	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[type]);
 
-	if (type_info->value_bitmask > 32)
+	if (type_info->value_bitcount > 32)
 		for (spvm_word i = 0; i < state->results[id].member_count; i++)
 			state->results[id].members[i].value.d = ceil(state->results[x].members[i].value.d);
 	else
@@ -124,7 +125,7 @@ void spvm_execute_GLSL450_Fract(spvm_word type, spvm_word id, spvm_word word_cou
 
 	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[type]);
 
-	if (type_info->value_bitmask > 32)
+	if (type_info->value_bitcount > 32)
 		for (spvm_word i = 0; i < state->results[id].member_count; i++)
 			state->results[id].members[i].value.d = state->results[x].members[i].value.d - floor(state->results[x].members[i].value.d);
 	else
@@ -279,7 +280,7 @@ void spvm_execute_GLSL450_Sqrt(spvm_word type, spvm_word id, spvm_word word_coun
 
 	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[type]);
 
-	if (type_info->value_bitmask > 32)
+	if (type_info->value_bitcount > 32)
 		for (spvm_word i = 0; i < state->results[id].member_count; i++)
 			state->results[id].members[i].value.d = sqrt(state->results[x].members[i].value.d);
 	else
@@ -292,12 +293,146 @@ void spvm_execute_GLSL450_InverseSqrt(spvm_word type, spvm_word id, spvm_word wo
 
 	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[type]);
 
-	if (type_info->value_bitmask > 32)
+	if (type_info->value_bitcount > 32)
 		for (spvm_word i = 0; i < state->results[id].member_count; i++)
 			state->results[id].members[i].value.d = 1.0 / sqrt(state->results[x].members[i].value.d);
 	else
 		for (spvm_word i = 0; i < state->results[id].member_count; i++)
 			state->results[id].members[i].value.f = 1.0f / sqrtf(state->results[x].members[i].value.f);
+}
+#define MATRIX_GET(m, c, r) *(m + c * 4 + r)
+void matrix_to_array_d(double* out, spvm_byte use_d, spvm_member_t mems, spvm_word mem_count) {
+	if (use_d) {
+		for (spvm_word i = 0; i < mem_count; i++)
+			for (spvm_word j = 0; j < mems[i].member_count; j++)
+				MATRIX_GET(out, i, j) = mems[i].members[j].value.d;
+	}
+	else {
+		for (spvm_word i = 0; i < mem_count; i++)
+			for (spvm_word j = 0; j < mems[i].member_count; j++)
+				MATRIX_GET(out, i, j) = (double)mems[i].members[j].value.f;
+	}
+}
+double matrix_determinant(double* m, spvm_word mtype)
+{
+	if (mtype == 2) // 2x2 matrix
+		return MATRIX_GET(m,0,0) * MATRIX_GET(m, 1, 1) - MATRIX_GET(m, 1, 0) * MATRIX_GET(m, 0, 1);
+	else if (mtype == 3) // 3x3 matrix
+		return  MATRIX_GET(m,0,0) * (MATRIX_GET(m,1,1) * MATRIX_GET(m,2,2) - MATRIX_GET(m,2,1) * MATRIX_GET(m,1,2))
+		       -MATRIX_GET(m,1,0) * (MATRIX_GET(m,0,1) * MATRIX_GET(m,2,2) - MATRIX_GET(m,2,1) * MATRIX_GET(m,0,2))
+			   +MATRIX_GET(m,2,0) * (MATRIX_GET(m,0,1) * MATRIX_GET(m,1,2) - MATRIX_GET(m,1,1) * MATRIX_GET(m,0,2));
+	else if (mtype == 4) {
+		double m2233 = MATRIX_GET(m,2,2) * MATRIX_GET(m,3,3) - MATRIX_GET(m,3,2) * MATRIX_GET(m,2,3);
+		double m2133 = MATRIX_GET(m,2,1) * MATRIX_GET(m,3,3) - MATRIX_GET(m,3,1) * MATRIX_GET(m,2,3);
+		double m2132 = MATRIX_GET(m,2,1) * MATRIX_GET(m,3,2) - MATRIX_GET(m,3,1) * MATRIX_GET(m,2,2);
+		double m2033 = MATRIX_GET(m,2,0) * MATRIX_GET(m,3,3) - MATRIX_GET(m,3,0) * MATRIX_GET(m,2,3);
+		double m2032 = MATRIX_GET(m,2,0) * MATRIX_GET(m,3,2) - MATRIX_GET(m,3,0) * MATRIX_GET(m,2,2);
+		double m2031 = MATRIX_GET(m,2,0) * MATRIX_GET(m,3,1) - MATRIX_GET(m,3,0) * MATRIX_GET(m,2,1);
+
+		return  MATRIX_GET(m,0,0) * (MATRIX_GET(m,1,1) * m2233 - MATRIX_GET(m,1,2) * m2133 + MATRIX_GET(m,1,3) * m2132)
+			   -MATRIX_GET(m,0,1) * (MATRIX_GET(m,1,0) * m2233 - MATRIX_GET(m,1,2) * m2033 + MATRIX_GET(m,1,3) * m2032)
+			   +MATRIX_GET(m,0,2) * (MATRIX_GET(m,1,0) * m2133 - MATRIX_GET(m,1,1) * m2033 + MATRIX_GET(m,1,3) * m2031)
+			   -MATRIX_GET(m,0,3) * (MATRIX_GET(m,1,0) * m2132 - MATRIX_GET(m,1,1) * m2032 + MATRIX_GET(m,1,2) * m2031);
+	}
+
+	return 0.0;
+}
+void spvm_execute_GLSL450_Determinant(spvm_word type, spvm_word id, spvm_word word_count, spvm_state_t state)
+{
+	spvm_word x = SPVM_READ_WORD(state->code_current);
+	double m[4][4];
+	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[type]);
+	spvm_word mtype = state->results[x].member_count;
+	
+	matrix_to_array_d(&m[0][0], type_info->value_bitcount > 32, state->results[x].members, mtype);
+	double res = matrix_determinant(&m[0][0], mtype);
+
+	if (type_info->value_bitcount > 32)
+		state->results[id].members[0].value.d = res;
+	else
+		state->results[id].members[0].value.f = res;
+}
+void spvm_execute_GLSL450_MatrixInverse(spvm_word type, spvm_word id, spvm_word word_count, spvm_state_t state)
+{
+	spvm_word x = SPVM_READ_WORD(state->code_current);
+	double m[4][4];
+	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[type]);
+	spvm_word mtype = state->results[x].member_count;
+
+	matrix_to_array_d(&m[0][0], type_info->value_bitcount > 32, state->results[x].members, mtype);
+	double invdet = 1.0 / matrix_determinant(&m[0][0], mtype);
+
+	double res[4][4];
+
+	if (mtype == 2) {
+		res[0][0] = +m[1][1] * invdet;
+		res[0][1] = -m[0][1] * invdet;
+		res[1][0] = -m[1][0] * invdet;
+		res[1][1] = +m[0][0] * invdet;
+	} else if (mtype == 3) {
+		res[0][0] = +(m[1][1] * m[2][2] - m[2][1] * m[1][2]) * invdet;
+		res[0][1] = -(m[0][1] * m[2][2] - m[2][1] * m[0][2]) * invdet;
+		res[0][2] = +(m[0][1] * m[1][2] - m[1][1] * m[0][2]) * invdet;
+		res[1][0] = -(m[1][0] * m[2][2] - m[2][0] * m[1][2]) * invdet;
+		res[1][1] = +(m[0][0] * m[2][2] - m[2][0] * m[0][2]) * invdet;
+		res[1][2] = -(m[0][0] * m[1][2] - m[1][0] * m[0][2]) * invdet;
+		res[2][0] = +(m[1][0] * m[2][1] - m[2][0] * m[1][1]) * invdet;
+		res[2][1] = -(m[0][0] * m[2][1] - m[2][0] * m[0][1]) * invdet;
+		res[2][2] = +(m[0][0] * m[1][1] - m[1][0] * m[0][1]) * invdet;
+	} else if (mtype == 4) {
+		double Coef00 = m[2][2] * m[3][3] - m[3][2] * m[2][3];
+		double Coef02 = m[1][2] * m[3][3] - m[3][2] * m[1][3];
+		double Coef03 = m[1][2] * m[2][3] - m[2][2] * m[1][3];
+
+		double Coef04 = m[2][1] * m[3][3] - m[3][1] * m[2][3];
+		double Coef06 = m[1][1] * m[3][3] - m[3][1] * m[1][3];
+		double Coef07 = m[1][1] * m[2][3] - m[2][1] * m[1][3];
+
+		double Coef08 = m[2][1] * m[3][2] - m[3][1] * m[2][2];
+		double Coef10 = m[1][1] * m[3][2] - m[3][1] * m[1][2];
+		double Coef11 = m[1][1] * m[2][2] - m[2][1] * m[1][2];
+
+		double Coef12 = m[2][0] * m[3][3] - m[3][0] * m[2][3];
+		double Coef14 = m[1][0] * m[3][3] - m[3][0] * m[1][3];
+		double Coef15 = m[1][0] * m[2][3] - m[2][0] * m[1][3];
+
+		double Coef16 = m[2][0] * m[3][2] - m[3][0] * m[2][2];
+		double Coef18 = m[1][0] * m[3][2] - m[3][0] * m[1][2];
+		double Coef19 = m[1][0] * m[2][2] - m[2][0] * m[1][2];
+
+		double Coef20 = m[2][0] * m[3][1] - m[3][0] * m[2][1];
+		double Coef22 = m[1][0] * m[3][1] - m[3][0] * m[1][1];
+		double Coef23 = m[1][0] * m[2][1] - m[2][0] * m[1][1];
+
+		res[0][0] = +(m[1][1] * Coef00 - m[1][2] * Coef04 + m[1][3] * Coef08) * invdet;
+		res[0][1] = -(m[0][1] * Coef00 - m[0][2] * Coef04 + m[0][3] * Coef08) * invdet;
+		res[0][2] = +(m[0][1] * Coef02 - m[0][2] * Coef06 + m[0][3] * Coef10) * invdet;
+		res[0][3] = -(m[0][1] * Coef03 - m[0][2] * Coef07 + m[0][3] * Coef11) * invdet;
+
+		res[1][0] = -(m[1][0] * Coef00 - m[1][2] * Coef12 + m[1][3] * Coef16) * invdet;
+		res[1][1] = +(m[0][0] * Coef00 - m[0][2] * Coef12 + m[0][3] * Coef16) * invdet;
+		res[1][2] = -(m[0][0] * Coef02 - m[0][2] * Coef14 + m[0][3] * Coef18) * invdet;
+		res[1][3] = +(m[0][0] * Coef03 - m[0][2] * Coef15 + m[0][3] * Coef19) * invdet;
+
+		res[2][0] = +(m[1][0] * Coef04 - m[1][1] * Coef12 + m[1][3] * Coef20) * invdet;
+		res[2][1] = -(m[0][0] * Coef04 - m[0][1] * Coef12 + m[0][3] * Coef20) * invdet;
+		res[2][2] = +(m[0][0] * Coef06 - m[0][1] * Coef14 + m[0][3] * Coef22) * invdet;
+		res[2][3] = -(m[0][0] * Coef07 - m[0][1] * Coef15 + m[0][3] * Coef23) * invdet;
+
+		res[3][0] = -(m[1][0] * Coef08 - m[1][1] * Coef16 + m[1][2] * Coef20) * invdet;
+		res[3][1] = +(m[0][0] * Coef08 - m[0][1] * Coef16 + m[0][2] * Coef20) * invdet;
+		res[3][2] = -(m[0][0] * Coef10 - m[0][1] * Coef18 + m[0][2] * Coef22) * invdet;
+		res[3][3] = +(m[0][0] * Coef11 - m[0][1] * Coef19 + m[0][2] * Coef23) * invdet;
+	}
+
+	if (type_info->value_bitcount > 32)
+		for (int i = 0; i < mtype; i++)
+			for (int j = 0; j < mtype; j++)
+				state->results[id].members[i].members[j].value.d = res[i][j];
+	else
+		for (int i = 0; i < mtype; i++)
+			for (int j = 0; j < mtype; j++)
+				state->results[id].members[i].members[j].value.f = res[i][j];
 }
 void spvm_execute_GLSL450_Modf(spvm_word type, spvm_word id, spvm_word word_count, spvm_state_t state)
 {
@@ -306,7 +441,7 @@ void spvm_execute_GLSL450_Modf(spvm_word type, spvm_word id, spvm_word word_coun
 
 	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[type]);
 
-	if (type_info->value_bitmask > 32)
+	if (type_info->value_bitcount > 32)
 		for (spvm_word i = 0; i < state->results[id].member_count; i++)
 			state->results[id].members[i].value.d = modf(state->results[x].members[i].value.d, &state->results[out].members[i].value.d);
 	else
@@ -319,7 +454,7 @@ void spvm_execute_GLSL450_ModfStruct(spvm_word type, spvm_word id, spvm_word wor
 
 	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[type]);
 
-	if (type_info->value_bitmask > 32)
+	if (type_info->value_bitcount > 32)
 		for (spvm_word i = 0; i < state->results[id].member_count; i++)
 			state->results[id].members[0].members[i].value.d = modf(state->results[x].members[i].value.d, &state->results[id].members[1].members[i].value.d);
 	else
@@ -333,7 +468,7 @@ void spvm_execute_GLSL450_FMin(spvm_word type, spvm_word id, spvm_word word_coun
 
 	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[type]);
 
-	if (type_info->value_bitmask > 32)
+	if (type_info->value_bitcount > 32)
 		for (spvm_word i = 0; i < state->results[id].member_count; i++)
 			state->results[id].members[i].value.d = MIN(state->results[x].members[i].value.d, state->results[y].members[i].value.d);
 	else
@@ -363,7 +498,7 @@ void spvm_execute_GLSL450_FMax(spvm_word type, spvm_word id, spvm_word word_coun
 
 	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[type]);
 
-	if (type_info->value_bitmask > 32)
+	if (type_info->value_bitcount > 32)
 		for (spvm_word i = 0; i < state->results[id].member_count; i++)
 			state->results[id].members[i].value.d = MAX(state->results[x].members[i].value.d, state->results[y].members[i].value.d);
 	else
@@ -394,7 +529,7 @@ void spvm_execute_GLSL450_FClamp(spvm_word type, spvm_word id, spvm_word word_co
 
 	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[type]);
 
-	if (type_info->value_bitmask > 32)
+	if (type_info->value_bitcount > 32)
 		for (spvm_word i = 0; i < state->results[id].member_count; i++)
 			state->results[id].members[i].value.d = CLAMP(state->results[x].members[i].value.d, state->results[minVal].members[i].value.d, state->results[maxVal].members[i].value.d);
 	else
@@ -427,7 +562,7 @@ void spvm_execute_GLSL450_FMix(spvm_word type, spvm_word id, spvm_word word_coun
 
 	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[type]);
 
-	if (type_info->value_bitmask > 32)
+	if (type_info->value_bitcount > 32)
 		for (spvm_word i = 0; i < state->results[id].member_count; i++) {
 			double aVal = state->results[a].members[i].value.d;
 			state->results[id].members[i].value.d = state->results[x].members[i].value.d * (1 - aVal) + state->results[y].members[i].value.d * aVal;
@@ -445,7 +580,7 @@ void spvm_execute_GLSL450_Step(spvm_word type, spvm_word id, spvm_word word_coun
 
 	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[type]);
 
-	if (type_info->value_bitmask > 32)
+	if (type_info->value_bitcount > 32)
 		for (spvm_word i = 0; i < state->results[id].member_count; i++)
 			state->results[id].members[i].value.d = state->results[x].members[i].value.d >= state->results[edge].members[i].value.d;
 	else
@@ -460,7 +595,7 @@ void spvm_execute_GLSL450_SmoothStep(spvm_word type, spvm_word id, spvm_word wor
 
 	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[type]);
 
-	if (type_info->value_bitmask > 32)
+	if (type_info->value_bitcount > 32)
 		for (spvm_word i = 0; i < state->results[id].member_count; i++) {
 			double xVal = state->results[x].members[i].value.d;
 			double edge0Val = state->results[edge0].members[i].value.d;
@@ -489,7 +624,7 @@ void spvm_execute_GLSL450_Fma(spvm_word type, spvm_word id, spvm_word word_count
 
 	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[type]);
 
-	if (type_info->value_bitmask > 32)
+	if (type_info->value_bitcount > 32)
 		for (spvm_word i = 0; i < state->results[id].member_count; i++)
 			state->results[id].members[i].value.d = state->results[a].members[i].value.d * state->results[b].members[i].value.d + state->results[c].members[i].value.d;
 	else
@@ -503,7 +638,7 @@ void spvm_execute_GLSL450_Frexp(spvm_word type, spvm_word id, spvm_word word_cou
 
 	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[type]);
 
-	if (type_info->value_bitmask > 32)
+	if (type_info->value_bitcount > 32)
 		for (spvm_word i = 0; i < state->results[id].member_count; i++)
 			state->results[id].members[i].value.d = frexp(state->results[x].members[i].value.d, &state->results[out].members[i].value.s);
 	else
@@ -516,7 +651,7 @@ void spvm_execute_GLSL450_FrexpStruct(spvm_word type, spvm_word id, spvm_word wo
 
 	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[type]);
 
-	if (type_info->value_bitmask > 32)
+	if (type_info->value_bitcount > 32)
 		for (spvm_word i = 0; i < state->results[id].member_count; i++)
 			state->results[id].members[0].members[i].value.d = frexp(state->results[x].members[i].value.d, &state->results[id].members[1].members[i].value.s);
 	else
@@ -530,12 +665,234 @@ void spvm_execute_GLSL450_Ldexp(spvm_word type, spvm_word id, spvm_word word_cou
 
 	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[type]);
 
-	if (type_info->value_bitmask > 32)
+	if (type_info->value_bitcount > 32)
 		for (spvm_word i = 0; i < state->results[id].member_count; i++)
 			state->results[id].members[i].value.d = ldexp(state->results[x].members[i].value.d, &state->results[exp].members[i].value.s);
 	else
 		for (spvm_word i = 0; i < state->results[id].member_count; i++)
 			state->results[id].members[i].value.f = ldexpf(state->results[x].members[i].value.f, &state->results[exp].members[i].value.s);
+}
+void spvm_execute_GLSL450_PackSnorm4x8(spvm_word type, spvm_word id, spvm_word word_count, spvm_state_t state)
+{
+	spvm_word x = SPVM_READ_WORD(state->code_current);
+
+	unsigned int res = 0;
+	for (spvm_word i = 0; i < 4; i++) {
+		char s = roundf(CLAMP(state->results[x].members[i].value.f, -1.0f, +1.0f) * 127.0f);
+		res |= s << (8 * i);
+	}
+	state->results[id].members[0].value.u = res;
+}
+void spvm_execute_GLSL450_PackUnorm4x8(spvm_word type, spvm_word id, spvm_word word_count, spvm_state_t state)
+{
+	spvm_word x = SPVM_READ_WORD(state->code_current);
+
+	unsigned int res = 0;
+	for (spvm_word i = 0; i < 4; i++) {
+		unsigned char s = roundf(CLAMP(state->results[x].members[i].value.f, 0.0f, +1.0f) * 255.0f);
+		res |= s << (8 * i);
+	}
+	state->results[id].members[0].value.u = res;
+}
+void spvm_execute_GLSL450_PackSnorm2x16(spvm_word type, spvm_word id, spvm_word word_count, spvm_state_t state)
+{
+	spvm_word x = SPVM_READ_WORD(state->code_current);
+
+	unsigned int res = 0;
+	for (spvm_word i = 0; i < 2; i++) {
+		short s = roundf(CLAMP(state->results[x].members[i].value.f, -1.0f, +1.0f) * 32767.0f);
+		res |= s << (16 * i);
+	}
+	state->results[id].members[0].value.u = res;
+}
+void spvm_execute_GLSL450_PackUnorm2x16(spvm_word type, spvm_word id, spvm_word word_count, spvm_state_t state)
+{
+	spvm_word x = SPVM_READ_WORD(state->code_current);
+
+	unsigned int res = 0;
+	for (spvm_word i = 0; i < 2; i++) {
+		unsigned short s = roundf(CLAMP(state->results[x].members[i].value.f, 0.0f, +1.0f) * 65535.0f);
+		res |= s << (16 * i);
+	}
+	state->results[id].members[0].value.u = res;
+}
+void spvm_execute_GLSL450_PackDouble2x32(spvm_word type, spvm_word id, spvm_word word_count, spvm_state_t state)
+{
+	spvm_word x = SPVM_READ_WORD(state->code_current);
+
+	union {
+		unsigned int data[2];
+		double res;
+	} u;
+
+	u.data[0] = state->results[x].members[0].value.u;
+	u.data[1] = state->results[x].members[1].value.u;
+
+	state->results[id].members[0].value.d = u.res;
+}
+typedef union {
+	unsigned int i;
+	float f;
+} floatConverter;
+float toFloat32(short value)
+{
+	/* https://github.com/g-truc/glm/blob/ddebaba03308475b1e33670267eadd596d039949/glm/detail/type_half.inl */
+	int s = (value >> 15) & 0x00000001;
+	int e = (value >> 10) & 0x0000001f;
+	int m = value & 0x000003ff;
+
+	if (e == 0) {
+		if (m == 0) {
+			floatConverter result;
+			result.i = s << 31;
+			return result.f;
+		}
+		else {
+			while (!(m & 0x00000400)) {
+				m <<= 1;
+				e -= 1;
+			}
+
+			e += 1;
+			m &= ~0x00000400;
+		}
+	}
+	else if (e == 31) {
+		if (m == 0) {
+			floatConverter result;
+			result.i = (s << 31) | 0x7f800000;
+			return result.f;
+		}
+		else {
+			floatConverter result;
+			result.i = (s << 31) | 0x7f800000 | (m << 13);
+			return result.f;
+		}
+	}
+
+	e = e + (127 - 15);
+	m = m << 13;
+
+	floatConverter Result;
+	Result.i = (s << 31) | (e << 23) | m;
+	return Result.f;
+}
+short toFloat16(float value)
+{
+	/* https://github.com/g-truc/glm/blob/ddebaba03308475b1e33670267eadd596d039949/glm/detail/type_half.inl */
+	floatConverter Entry;
+	Entry.f = value;
+	int i = Entry.i;
+
+	int s = (i >> 16) & 0x00008000;
+	int e = ((i >> 23) & 0x000000ff) - (127 - 15);
+	int m = i & 0x007fffff;
+
+	if (e <= 0) {
+		if (e < -10)
+			return s;
+
+		m = (m | 0x00800000) >> (1 - e);
+
+		if (m & 0x00001000)
+			m += 0x00002000;
+
+		return s | (m >> 13);
+	}
+	else if (e == 0xff - (127 - 15)) {
+		if (m == 0)
+			return s | 0x7c00;
+		else {
+			m >>= 13;
+			return s | 0x7c00 | m | (m == 0);
+		}
+	}
+	else {
+		if (m & 0x00001000) {
+			m += 0x00002000;
+			if (m & 0x00800000) {
+				m = 0;
+				e += 1;
+			}
+		}
+
+		if (e > 30)
+			return s | 0x7c00;
+
+		return s | (e << 10) | (m >> 13);
+	}
+
+	return 0;
+}
+void spvm_execute_GLSL450_PackHalf2x16(spvm_word type, spvm_word id, spvm_word word_count, spvm_state_t state)
+{
+	spvm_word x = SPVM_READ_WORD(state->code_current);
+
+	unsigned int res = toFloat16(state->results[x].members[0].value.f);
+	res |= ((unsigned int)toFloat16(state->results[x].members[1].value.f)) << 16;
+
+	state->results[id].members[0].value.u = res;
+}
+void spvm_execute_GLSL450_UnpackHalf2x16(spvm_word type, spvm_word id, spvm_word word_count, spvm_state_t state)
+{
+	spvm_word x = SPVM_READ_WORD(state->code_current);
+
+	state->results[id].members[0].value.f = toFloat32(state->results[x].members[0].value.u);
+	state->results[id].members[1].value.f = toFloat32(state->results[x].members[0].value.u >> 16);
+}
+void spvm_execute_GLSL450_UnpackDouble2x32(spvm_word type, spvm_word id, spvm_word word_count, spvm_state_t state)
+{
+	spvm_word x = SPVM_READ_WORD(state->code_current);
+
+	union {
+		unsigned int res[2];
+		double data;
+	} u;
+
+	u.data = state->results[x].members[0].value.d;
+
+	state->results[id].members[0].value.u = u.res[0];
+	state->results[id].members[1].value.u = u.res[1];
+}
+void spvm_execute_GLSL450_UnpackUnorm2x16(spvm_word type, spvm_word id, spvm_word word_count, spvm_state_t state)
+{
+	spvm_word x = SPVM_READ_WORD(state->code_current);
+
+	unsigned int res = state->results[x].members[0].value.u;
+	for (spvm_word i = 0; i < 2; i++) {
+		unsigned short s = res >> (16 * i);
+		state->results[id].members[i].value.f = CLAMP(s / 65535.0f, 0.0f, +1.0f);
+	}
+}
+void spvm_execute_GLSL450_UnpackSnorm2x16(spvm_word type, spvm_word id, spvm_word word_count, spvm_state_t state)
+{
+	spvm_word x = SPVM_READ_WORD(state->code_current);
+
+	unsigned int res = state->results[x].members[0].value.u;
+	for (spvm_word i = 0; i < 2; i++) {
+		short s = res >> (16 * i);
+		state->results[id].members[i].value.f = CLAMP(s / 32767.0f, -1.0f, +1.0f);
+	}
+}
+void spvm_execute_GLSL450_UnpackUnorm4x8(spvm_word type, spvm_word id, spvm_word word_count, spvm_state_t state)
+{
+	spvm_word x = SPVM_READ_WORD(state->code_current);
+
+	unsigned int res = state->results[x].members[0].value.u;
+	for (spvm_word i = 0; i < 4; i++) {
+		unsigned char s = res >> (8 * i);
+		state->results[id].members[i].value.f = CLAMP(s / 255.0f, 0.0f, +1.0f);
+	}
+}
+void spvm_execute_GLSL450_UnpackSnorm4x8(spvm_word type, spvm_word id, spvm_word word_count, spvm_state_t state)
+{
+	spvm_word x = SPVM_READ_WORD(state->code_current);
+
+	unsigned int res = state->results[x].members[0].value.u;
+	for (spvm_word i = 0; i < 4; i++) {
+		char s = res >> (8 * i);
+		state->results[id].members[i].value.f = CLAMP(s / 127.0f, -1.0f, +1.0f);
+	}
 }
 void spvm_execute_GLSL450_Length(spvm_word type, spvm_word id, spvm_word word_count, spvm_state_t state)
 {
@@ -543,7 +900,7 @@ void spvm_execute_GLSL450_Length(spvm_word type, spvm_word id, spvm_word word_co
 
 	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[type]);
 
-	if (type_info->value_bitmask > 32) {
+	if (type_info->value_bitcount > 32) {
 		double sum = 0.0;
 		for (spvm_word i = 0; i < state->results[id].member_count; i++)
 			sum += state->results[x].members[i].value.d * state->results[x].members[i].value.d;
@@ -562,7 +919,7 @@ void spvm_execute_GLSL450_Distance(spvm_word type, spvm_word id, spvm_word word_
 
 	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[type]);
 
-	if (type_info->value_bitmask > 32) {
+	if (type_info->value_bitcount > 32) {
 		double sum = 0.0;
 		for (spvm_word i = 0; i < state->results[id].member_count; i++)
 			sum += (state->results[p0].members[i].value.d - state->results[p1].members[i].value.d) * (state->results[p0].members[i].value.d - state->results[p1].members[i].value.d);
@@ -581,7 +938,7 @@ void spvm_execute_GLSL450_Cross(spvm_word type, spvm_word id, spvm_word word_cou
 
 	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[type]);
 
-	if (type_info->value_bitmask > 32) {
+	if (type_info->value_bitcount > 32) {
 		spvm_member_t xMems = state->results[x].members;
 		spvm_member_t yMems = state->results[y].members;
 		state->results[id].members[0].value.d = xMems[1].value.d * yMems[2].value.d - yMems[1].value.d * xMems[2].value.d;
@@ -602,7 +959,7 @@ void spvm_execute_GLSL450_Normalize(spvm_word type, spvm_word id, spvm_word word
 
 	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[type]);
 
-	if (type_info->value_bitmask > 32) {
+	if (type_info->value_bitcount > 32) {
 		double sum = 0.0;
 		for (spvm_word i = 0; i < state->results[id].member_count; i++)
 			sum += state->results[x].members[i].value.d * state->results[x].members[i].value.d;
@@ -627,7 +984,7 @@ void spvm_execute_GLSL450_FaceForward(spvm_word type, spvm_word id, spvm_word wo
 
 	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[type]);
 
-	if (type_info->value_bitmask > 32) {
+	if (type_info->value_bitcount > 32) {
 		double dot = 0.0;
 		for (spvm_word i = 0; i < state->results[id].member_count; i++)
 			dot += state->results[Nref].members[i].value.d * state->results[I].members[i].value.d;
@@ -651,7 +1008,7 @@ void spvm_execute_GLSL450_Reflect(spvm_word type, spvm_word id, spvm_word word_c
 
 	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[type]);
 
-	if (type_info->value_bitmask > 32) {
+	if (type_info->value_bitcount > 32) {
 		double dotNI = 0.0;
 		for (spvm_word i = 0; i < state->results[id].member_count; i++)
 			dotNI += state->results[N].members[i].value.d * state->results[I].members[i].value.d;
@@ -673,7 +1030,7 @@ void spvm_execute_GLSL450_Refract(spvm_word type, spvm_word id, spvm_word word_c
 
 	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[type]);
 
-	if (type_info->value_bitmask > 32) {
+	if (type_info->value_bitcount > 32) {
 		double eta = state->results[SPVM_READ_WORD(state->code_current)].members[0].value.d;
 
 		double dotNI = 0.0;
@@ -706,10 +1063,74 @@ void spvm_execute_GLSL450_Refract(spvm_word type, spvm_word id, spvm_word word_c
 				state->results[id].members[i].value.f = eta * state->results[I].members[i].value.f - (eta * dotNI + sqrtf(k)) * state->results[N].members[i].value.f;
 	}
 }
+void spvm_execute_GLSL450_FindILsb(spvm_word type, spvm_word id, spvm_word word_count, spvm_state_t state)
+{
+	spvm_word x = SPVM_READ_WORD(state->code_current);
+
+	for (spvm_word i = 0; i < state->results[id].member_count; i++)
+		_BitScanForward(&state->results[id].members[0].value.u, state->results[x].members[0].value.u);
+}
+void spvm_execute_GLSL450_FindSMsb(spvm_word type, spvm_word id, spvm_word word_count, spvm_state_t state)
+{
+	spvm_word x = SPVM_READ_WORD(state->code_current);
+
+	for (spvm_word i = 0; i < state->results[id].member_count; i++)
+		_BitScanReverse(&state->results[id].members[0].value.s, state->results[x].members[0].value.s);
+}
+void spvm_execute_GLSL450_FindUMsb(spvm_word type, spvm_word id, spvm_word word_count, spvm_state_t state)
+{
+	spvm_word x = SPVM_READ_WORD(state->code_current);
+
+	for (spvm_word i = 0; i < state->results[id].member_count; i++)
+		_BitScanReverse(&state->results[id].members[0].value.u, state->results[x].members[0].value.u);
+}
+void spvm_execute_GLSL450_NMin(spvm_word type, spvm_word id, spvm_word word_count, spvm_state_t state)
+{
+	spvm_word x = SPVM_READ_WORD(state->code_current);
+	spvm_word y = SPVM_READ_WORD(state->code_current);
+
+	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[type]);
+
+	if (type_info->value_bitcount > 32)
+		for (spvm_word i = 0; i < state->results[id].member_count; i++)
+			state->results[id].members[i].value.d = NMIN(state->results[x].members[i].value.d, state->results[y].members[i].value.d);
+	else
+		for (spvm_word i = 0; i < state->results[id].member_count; i++)
+			state->results[id].members[i].value.f = NMIN(state->results[x].members[i].value.f, state->results[y].members[i].value.f);
+}
+void spvm_execute_GLSL450_NMax(spvm_word type, spvm_word id, spvm_word word_count, spvm_state_t state)
+{
+	spvm_word x = SPVM_READ_WORD(state->code_current);
+	spvm_word y = SPVM_READ_WORD(state->code_current);
+
+	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[type]);
+
+	if (type_info->value_bitcount > 32)
+		for (spvm_word i = 0; i < state->results[id].member_count; i++)
+			state->results[id].members[i].value.d = NMAX(state->results[x].members[i].value.d, state->results[y].members[i].value.d);
+	else
+		for (spvm_word i = 0; i < state->results[id].member_count; i++)
+			state->results[id].members[i].value.f = NMAX(state->results[x].members[i].value.f, state->results[y].members[i].value.f);
+}
+void spvm_execute_GLSL450_NClamp(spvm_word type, spvm_word id, spvm_word word_count, spvm_state_t state)
+{
+	spvm_word x = SPVM_READ_WORD(state->code_current);
+	spvm_word minVal = SPVM_READ_WORD(state->code_current);
+	spvm_word maxVal = SPVM_READ_WORD(state->code_current);
+
+	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[type]);
+
+	if (type_info->value_bitcount > 32)
+		for (spvm_word i = 0; i < state->results[id].member_count; i++)
+			state->results[id].members[i].value.d = NCLAMP(state->results[x].members[i].value.d, state->results[minVal].members[i].value.d, state->results[maxVal].members[i].value.d);
+	else
+		for (spvm_word i = 0; i < state->results[id].member_count; i++)
+			state->results[id].members[i].value.f = NCLAMP(state->results[x].members[i].value.f, state->results[minVal].members[i].value.f, state->results[maxVal].members[i].value.f);
+}
 
 spvm_ext_opcode_func* spvm_build_glsl450_ext()
 {
-	spvm_ext_opcode_func* ret = (spvm_ext_opcode_func*)malloc(GLSLstd450Count * sizeof(spvm_ext_opcode_func));
+	spvm_ext_opcode_func* ret = (spvm_ext_opcode_func*)calloc(GLSLstd450Count, sizeof(spvm_ext_opcode_func));
 	
 	ret[GLSLstd450Round] = spvm_execute_GLSL450_Round;
 	ret[GLSLstd450RoundEven] = spvm_execute_GLSL450_RoundEven;
@@ -743,8 +1164,8 @@ spvm_ext_opcode_func* spvm_build_glsl450_ext()
 	ret[GLSLstd450Log2] = spvm_execute_GLSL450_Log2;
 	ret[GLSLstd450Sqrt] = spvm_execute_GLSL450_Sqrt;
 	ret[GLSLstd450InverseSqrt] = spvm_execute_GLSL450_InverseSqrt;
-	ret[GLSLstd450Determinant] = 0;
-	ret[GLSLstd450MatrixInverse] = 0;
+	ret[GLSLstd450Determinant] = spvm_execute_GLSL450_Determinant;
+	ret[GLSLstd450MatrixInverse] = spvm_execute_GLSL450_MatrixInverse;
 	ret[GLSLstd450Modf] = spvm_execute_GLSL450_Modf;
 	ret[GLSLstd450ModfStruct] = spvm_execute_GLSL450_ModfStruct;
 	ret[GLSLstd450FMin] = spvm_execute_GLSL450_FMin;
@@ -763,6 +1184,18 @@ spvm_ext_opcode_func* spvm_build_glsl450_ext()
 	ret[GLSLstd450Frexp] = spvm_execute_GLSL450_Frexp;
 	ret[GLSLstd450FrexpStruct] = spvm_execute_GLSL450_FrexpStruct;
 	ret[GLSLstd450Ldexp] = spvm_execute_GLSL450_Ldexp;
+	ret[GLSLstd450PackSnorm4x8] = spvm_execute_GLSL450_PackSnorm4x8;
+	ret[GLSLstd450PackUnorm4x8] = spvm_execute_GLSL450_PackUnorm4x8;
+	ret[GLSLstd450PackSnorm2x16] = spvm_execute_GLSL450_PackSnorm2x16;
+	ret[GLSLstd450PackUnorm2x16] = spvm_execute_GLSL450_PackUnorm2x16;
+	ret[GLSLstd450PackDouble2x32] = spvm_execute_GLSL450_PackDouble2x32;
+	ret[GLSLstd450PackHalf2x16] = spvm_execute_GLSL450_PackHalf2x16;
+	ret[GLSLstd450UnpackHalf2x16] = spvm_execute_GLSL450_UnpackHalf2x16;
+	ret[GLSLstd450UnpackDouble2x32] = spvm_execute_GLSL450_UnpackDouble2x32;
+	ret[GLSLstd450UnpackSnorm2x16] = spvm_execute_GLSL450_UnpackSnorm2x16;
+	ret[GLSLstd450UnpackUnorm2x16] = spvm_execute_GLSL450_UnpackUnorm2x16;
+	ret[GLSLstd450UnpackSnorm4x8] = spvm_execute_GLSL450_UnpackSnorm4x8;
+	ret[GLSLstd450UnpackUnorm4x8] = spvm_execute_GLSL450_UnpackUnorm4x8;
 	ret[GLSLstd450Length] = spvm_execute_GLSL450_Length;
 	ret[GLSLstd450Distance] = spvm_execute_GLSL450_Distance;
 	ret[GLSLstd450Cross] = spvm_execute_GLSL450_Cross;
@@ -770,6 +1203,15 @@ spvm_ext_opcode_func* spvm_build_glsl450_ext()
 	ret[GLSLstd450FaceForward] = spvm_execute_GLSL450_FaceForward;
 	ret[GLSLstd450Reflect] = spvm_execute_GLSL450_Reflect;
 	ret[GLSLstd450Refract] = spvm_execute_GLSL450_Refract;
+	ret[GLSLstd450FindILsb] = spvm_execute_GLSL450_FindILsb;
+	ret[GLSLstd450FindSMsb] = spvm_execute_GLSL450_FindSMsb;
+	ret[GLSLstd450FindUMsb] = spvm_execute_GLSL450_FindUMsb;
+	ret[GLSLstd450InterpolateAtCentroid] = 0;
+	ret[GLSLstd450InterpolateAtSample] = 0;
+	ret[GLSLstd450InterpolateAtOffset] = 0;
+	ret[GLSLstd450NMin] = spvm_execute_GLSL450_NMin;
+	ret[GLSLstd450NMax] = spvm_execute_GLSL450_NMax;
+	ret[GLSLstd450NClamp] = spvm_execute_GLSL450_NClamp;
 	
 	return ret;
 }

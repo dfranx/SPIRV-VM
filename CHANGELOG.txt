@@ -1,0 +1,18 @@
+[v1.1]
++ add derivative instructions
++ add primitive instructions (for geometry shaders)
++ add following SPIR-V instructions: OpPhi, OpImageFetch, OpImageGather, OpImageQuerySize
++ add following GLSL instructions: Determinant, MatrixInverse, PackXXX/UnpackXXX, FindMSB/LSB, NMin/NMax/NClamp
++ add spvm_state_get_ddx/y()
++ add spvm_state::user_data
++ add spvm_program::user_data
++ add spvm_state::instruction_count
++ add spvm_state_jump_to_instruction()
++ add spvm_state_set_frag_coord()
++ add spvm_state_get_builtin()
++ rename spvm_result::value_bitmask to spvm_result::value_bitcount
++ fix OpTypeArray
++ fix OpMatrixTimesMatrix
++ fix OpSelect
++ fix OpCompositeConstruct and OpConstantComposite (for example: arrays of arrays)
++ fix crash on OpExtInst if extension instruction is not implemented

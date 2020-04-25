@@ -45,6 +45,8 @@ typedef struct {
 
 	spvm_word entry_point_count;
 	spvm_entry_point* entry_points;
+
+	void* user_data;
 } spvm_program;
 typedef spvm_program* spvm_program_t;
 

@@ -7,6 +7,9 @@
 #define MAX(x, y) (((x) > (y)) ? (x) : (y))
 #define MIN(x, y) (((x) < (y)) ? (x) : (y))
 #define CLAMP(x, minVal, maxVal) MIN(MAX((x), (minVal)), (maxVal))
+#define NMAX(x, y) (isnan(x) ? (y) : (isnan(y) ? (x) : MAX(x,y)))
+#define NMIN(x, y) (isnan(x) ? (y) : (isnan(y) ? (x) : MIN(x,y)))
+#define NCLAMP(x, minVal, maxVal) NMIN(NMAX((x), (minVal)), (maxVal))
 
 enum spvm_value_type
 {

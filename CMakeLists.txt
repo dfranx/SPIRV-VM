@@ -15,7 +15,7 @@ src/opcode_setup.c
 src/ext/GLSL450.c
 )
 
-add_library(SPIRVVM ${SOURCES})
+add_library(SPIRVVM STATIC ${SOURCES})
 
 if (UNIX)
 	target_link_libraries(SPIRVVM m)

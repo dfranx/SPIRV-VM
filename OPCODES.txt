@@ -1,0 +1,220 @@
+List of instructions that don't have an implementation:
+
+SPIR-V
+=========================================================
+
+[3.32.1 Miscellaneous Instructions]
+---------------------------------------------------------
+OpUndef
+OpSizeOf
+
+[3.32.2 Debug Instructions]
+---------------------------------------------------------
+OpSourceContinued
+OpModuleProcessed
+
+[3.32.3 Annotation Instruction]
+---------------------------------------------------------
+OpDecorationGroup
+OpGroupDecorate
+OpGroupMemberDecorate
+OpDecorateId
+OpDecorateString
+OpMemberDecorateString
+
+[3.32.4 Extension Instructions]
+---------------------------------------------------------
+OpExtension
+OpExecutionMode
+OpExecutionModeId
+
+[3.32.6 Type-Declaration Instructions]
+---------------------------------------------------------
+OpTypeSampler
+OpTypeRuntimeArray
+OpTypeOpaque
+OpTypeEvent
+OpTypeDeviceEvent
+OpTypeReserveId
+OpTypeQueue
+OpTypePipe
+OpTypeForwardPointer
+OpTypePipeStorage
+
+[3.32.7 Constant-Creation Instructions]
+---------------------------------------------------------
+OpConstantSampler
+OpSpecConstantTrue
+OpSpecConstantFalse
+OpSpecConstant
+OpSpecConstantComposite
+OpSpecConstantOp
+
+[3.32.8 Memory Instructions]
+---------------------------------------------------------
+OpImageTexelPointer
+OpInBoundsAccessChain
+OpPtrAccessChain
+OpArrayLength
+OpGenericPtrMemSemantics
+OpInBoundsPtrAccessChain
+
+[3.32.9 Function Instructions]
+---------------------------------------------------------
+
+[3.32.10 Image Instructions]
+---------------------------------------------------------
+OpSampledImage
+OpImageSampleExplicitLod
+OpImageSampleDrefImplicitLod
+OpImageSampleDrefExplicitLod
+OpImageSampleProjImplicitLod
+OpImageSampleProjExplicitLod
+OpImageSampleProjDrefImplicitLod
+OpImageSampleProjDrefExplicitLod
+OpImageDrefGather
+OpImageRead
+OpImageWrite
+OpImage
+OpImageQueryFormat
+OpImageQueryOrder
+OpImageQuerySizeLod
+OpImageQueryLod
+OpImageQueryLevels
+OpImageQuerySamples
+OpImageSparseSampleImplicitLod
+OpImageSparseSampleExplicitLod
+OpImageSparseSampleDrefImplicitLod
+OpImageSparseSampleDrefExplicitLod
+OpImageSparseSampleProjImplicitLod
+OpImageSparseSampleProjExplicitLod
+OpImageSparseSampleProjDrefImplicitLod
+OpImageSparseSampleProjDrefExplicitLod
+OpImageSparseFetch
+OpImageSparseGather
+OpImageSparseDrefGather
+OpImageSparseTexelsResident
+OpImageSparseRead
+
+[3.32.11 Conversion Instructions]
+---------------------------------------------------------
+OpQuantizeToF16
+OpConvertPtrToU
+OpSatConvertSToU
+OpSatConvertUToS
+OpConvertUToPtr
+OpPtrCastToGeneric
+OpGenericCastToPtr
+OpGenericCastToPtrExplicit
+
+[3.32.12 Composite Instructions]
+---------------------------------------------------------
+OpCompositeInsert
+OpCopyLogical
+
+[3.32.13 Arithmetic Instructions]
+---------------------------------------------------------
+OpCompositeInsert
+OpCopyLogical
+OpSRem
+OpFRem
+OpIAddCarry
+OpISubBorrow
+OpUMulExtended
+OpSMulExtended
+
+
+[3.32.14 Bit Instructions]
+---------------------------------------------------------
+OpShiftRightLogical
+OpShiftRightArithmetic
+OpShiftLeftLogical
+OpBitFieldInsert
+OpBitFieldSExtract
+OpBitFieldUExtract
+OpBitReverse
+OpBitCount
+
+[3.32.15 Relational and Logical Instructions]
+---------------------------------------------------------
+OpIsFinite
+OpIsNormal
+OpSignBitSet
+OpLessOrGreater
+OpOrdered
+OpUnordered
+OpFUnordEqual
+OpFUnordNotEqual
+OpFUnordLessThan
+OpFUnordGreaterThan
+OpFUnordLessThanEqual
+OpFUnordGreaterThanEqual
+
+[3.32.16 Derivative Instructions]
+---------------------------------------------------------
+
+[3.32.17 Control-Flow Instructions]
+---------------------------------------------------------
+OpLoopMerge
+OpSelectionMerge
+OpUnreachable
+OpLifetimeStart
+OpLifetimeStop
+
+[3.32.18 Atomic Instructions]
+---------------------------------------------------------
+OpAtomicLoad
+OpAtomicStore
+OpAtomicExchange
+OpAtomicCompareExchange
+OpAtomicCompareExchangeWeak
+OpAtomicIIncrement
+OpAtomicIDecrement
+OpAtomicIAdd
+OpAtomicISub
+OpAtomicSMin
+OpAtomicUMin
+OpAtomicSMax
+OpAtomicUMax
+OpAtomicAnd
+OpAtomicOr
+OpAtomicXor
+OpAtomicFlagTestAndSet
+OpAtomicFlagClear
+
+[3.32.19 Primitive Instructions]
+---------------------------------------------------------
+
+
+[3.32.20 Barrier Instructions]
+---------------------------------------------------------
+OpControlBarrier
+OpMemoryBarrier
+OpNamedBarrierInitialize
+OpMemoryNamedBarrier
+
+[3.32.21 Group and Subgroup Instructions]
+---------------------------------------------------------
+OpGroupAsyncCopy
+OpGroupWaitEvents
+OpGroupAll
+OpGroupAny
+OpGroupBroadcast
+OpGroupIAdd
+OpGroupFAdd
+OpGroupFMin
+OpGroupUMin
+OpGroupSMin
+OpGroupFMax
+OpGroupUMax
+OpGroupSMax
+
+...
+
+
+GLSL.std.450
+=========================================================
+InterpolateAtCentroid
+InterpolateAtSample
+InterpolateAtOffset
+

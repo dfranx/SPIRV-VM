@@ -79,6 +79,11 @@ void spvm_member_allocate_typed_value(spvm_member_t val, spvm_result* results, s
 		for (spvm_word i = 0; i < val->member_count; i++)
 			spvm_member_allocate_typed_value(&val->members[i], results, type_info->pointer);
 	}
+	else if (type_info->value_type == spvm_value_type_array) {
+		if (results[type_info->pointer].member_count > 0)
+			for (spvm_word i = 0; i < val->member_count; i++)
+				spvm_member_allocate_typed_value(&val->members[i], results, type_info->pointer);
+	}
 }
 void spvm_result_allocate_value(spvm_result_t val, spvm_word count)
 {
@@ -99,5 +104,10 @@ void spvm_result_allocate_typed_value(spvm_result_t val, spvm_result* results, s
 	else if (type_info->value_type == spvm_value_type_matrix) {
 		for (spvm_word i = 0; i < val->member_count; i++)
 			spvm_member_allocate_typed_value(&val->members[i], results, type_info->pointer);
+	}
+	else if (type_info->value_type == spvm_value_type_array) {
+		if (results[type_info->pointer].member_count > 0)
+			for (spvm_word i = 0; i < val->member_count; i++)
+				spvm_member_allocate_typed_value(&val->members[i], results, type_info->pointer);
 	}
 }

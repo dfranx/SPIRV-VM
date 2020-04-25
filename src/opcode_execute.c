@@ -6,11 +6,6 @@
 #include <string.h>
 #include <math.h>
 
-/*
-1. textures
-2. extensions
-*/
-
 /* opcodes */
 /* 3.32.2 Debug Instructions */
 void spvm_execute_OpLine(spvm_word word_count, spvm_state_t state)
@@ -38,7 +33,8 @@ void spvm_execute_OpExtInst(spvm_word word_count, spvm_state_t state)
 	spvm_word set = SPVM_READ_WORD(state->code_current);
 	spvm_word inst = SPVM_READ_WORD(state->code_current);
 
-	state->results[set].extension[inst](type, id, word_count - 4, state);
+	if (state->results[set].extension[inst])
+		state->results[set].extension[inst](type, id, word_count - 4, state);
 }
 
 /* 3.32.8 Memory Instructions */
@@ -160,6 +156,52 @@ void spvm_execute_OpReturnValue(spvm_word word_count, spvm_state_t state)
 }
 
 /* 3.32.10 Image Instruction */
+typedef struct {
+	float bias;
+	float lod;
+	float dx[3];
+	float dy[3];
+	char uses_offsets;
+	int offsets[4][3];
+	int sample;
+	float min_lod;
+} spvm_image_operands;
+void spvm_image_operands_parse(spvm_image_operands* info, spvm_word bits, spvm_state_t state)
+{
+	if (bits & SpvImageOperandsBiasMask)
+		info->bias = state->results[SPVM_READ_WORD(state->code_current)].members[0].value.f;
+	if (bits & SpvImageOperandsLodMask)
+		info->lod = state->results[SPVM_READ_WORD(state->code_current)].members[0].value.f;
+	if (bits & SpvImageOperandsGradMask) {
+		spvm_result_t dx = &state->results[SPVM_READ_WORD(state->code_current)];
+		spvm_result_t dy = &state->results[SPVM_READ_WORD(state->code_current)];
+		for (spvm_word i = 0; i < dx->member_count; i++)
+			info->dx[i] = dx->members[i].value.f;
+		for (spvm_word i = 0; i < dy->member_count; i++)
+			info->dy[i] = dy->members[i].value.f;
+	}
+	if (bits & SpvImageOperandsConstOffsetMask) {
+		spvm_result_t offs = &state->results[SPVM_READ_WORD(state->code_current)];
+		for (spvm_word i = 0; i < offs->member_count; i++)
+			info->offsets[0][i] = offs->members[i].value.s;
+	}
+	if (bits & SpvImageOperandsOffsetMask) {
+		spvm_result_t offs = &state->results[SPVM_READ_WORD(state->code_current)];
+		for (spvm_word i = 0; i < offs->member_count; i++)
+			info->offsets[0][i] = offs->members[i].value.s;
+	}
+	if (bits & SpvImageOperandsConstOffsetsMask) {
+		spvm_result_t offs = &state->results[SPVM_READ_WORD(state->code_current)];
+		for (spvm_word i = 0; i < offs->member_count; i++)
+			for (spvm_word j = 0; j < offs->member_count; j++)
+				info->offsets[i][j] = offs->members[i].members[j].value.s;
+		info->uses_offsets = 1;
+	}
+	if (bits & SpvImageOperandsSampleMask)
+		info->sample = state->results[SPVM_READ_WORD(state->code_current)].members[0].value.s;
+	if (bits & SpvImageOperandsMinLodMask)
+		info->min_lod = state->results[SPVM_READ_WORD(state->code_current)].members[0].value.f;
+}
 void spvm_execute_OpImageSampleImplicitLod(spvm_word word_count, spvm_state_t state)
 {
 	spvm_word res_type = SPVM_READ_WORD(state->code_current);
@@ -167,19 +209,136 @@ void spvm_execute_OpImageSampleImplicitLod(spvm_word word_count, spvm_state_t st
 	spvm_word image_id = SPVM_READ_WORD(state->code_current);
 	spvm_word coord_id = SPVM_READ_WORD(state->code_current);
 
+	spvm_image_operands operands;
+	memset(&operands, 0, sizeof(spvm_image_operands));
+
+	if (word_count > 4) {
+		spvm_word operand_bits = SPVM_READ_WORD(state->code_current);
+		spvm_image_operands_parse(&operands, operand_bits, state);
+	}
+
 	spvm_result_t coord = &state->results[coord_id];
 
 	spvm_result_t image_container = &state->results[image_id];
 	spvm_image_t image = image_container->members[0].image_data;
 
-	float stu[3] = { 0.0f, 0.0f, 0.0f };
+	float stu[4] = { 0.0f };
 	for (spvm_word i = 0; i < coord->member_count; i++)
 		stu[i] = coord->members[i].value.f;
+
+	stu[0] += operands.offsets[0][0] / (float)image->width;
+	stu[1] += operands.offsets[0][1] / (float)image->height;
+	stu[2] += operands.offsets[0][2] / (float)image->depth;
+
+	// todo: spvm_state_ddx/y(coord_id) ?
 
 	float* px = spvm_image_sample(image, stu[0], stu[1], stu[2]);
 
 	for (spvm_word i = 0; i < state->results[id].member_count; i++)
 		state->results[id].members[i].value.f = *(px + i);
+}
+void spvm_execute_OpImageFetch(spvm_word word_count, spvm_state_t state)
+{
+	spvm_word res_type = SPVM_READ_WORD(state->code_current);
+	spvm_word id = SPVM_READ_WORD(state->code_current);
+	spvm_word image_id = SPVM_READ_WORD(state->code_current);
+	spvm_word coord_id = SPVM_READ_WORD(state->code_current);
+
+	spvm_image_operands operands;
+	memset(&operands, 0, sizeof(spvm_image_operands));
+
+	if (word_count > 4) {
+		spvm_word operand_bits = SPVM_READ_WORD(state->code_current);
+		spvm_image_operands_parse(&operands, operand_bits, state);
+	}
+
+	spvm_result_t coord = &state->results[coord_id];
+
+	spvm_result_t image_container = &state->results[image_id];
+	spvm_image_t image = image_container->members[0].image_data;
+
+	float stu[4] = { 0.0f };
+	for (spvm_word i = 0; i < coord->member_count; i++)
+		stu[i] = coord->members[i].value.s + operands.offsets[0][i];
+
+	stu[0] /= image->width;
+	stu[1] /= image->height;
+	stu[2] /= image->depth;
+
+	// todo: spvm_state_ddx/y(coord_id) ?
+
+	float* px = spvm_image_sample(image, stu[0], stu[1], stu[2]);
+
+	for (spvm_word i = 0; i < state->results[id].member_count; i++)
+		state->results[id].members[i].value.f = *(px + i);
+}
+void spvm_execute_OpImageGather(spvm_word word_count, spvm_state_t state)
+{
+	spvm_word res_type = SPVM_READ_WORD(state->code_current);
+	spvm_word id = SPVM_READ_WORD(state->code_current);
+	spvm_word image_id = SPVM_READ_WORD(state->code_current);
+	spvm_word coord_id = SPVM_READ_WORD(state->code_current);
+	spvm_word comp_id = SPVM_READ_WORD(state->code_current);
+
+	spvm_image_operands operands;
+	memset(&operands, 0, sizeof(spvm_image_operands));
+
+	if (word_count > 4) {
+		spvm_word operand_bits = SPVM_READ_WORD(state->code_current);
+		spvm_image_operands_parse(&operands, operand_bits, state);
+	}
+
+	spvm_result_t coord = &state->results[coord_id];
+
+	spvm_word comp = state->results[coord_id].members[0].value.s;
+
+	spvm_result_t image_container = &state->results[image_id];
+	spvm_image_t image = image_container->members[0].image_data;
+
+	float stu[4] = { 0.0f };
+	for (spvm_word i = 0; i < coord->member_count; i++)
+		stu[i] = coord->members[i].value.f;
+
+	int offs[4][2] = {
+		{ 0, 1 },
+		{ 1, 1 },
+		{ 1, 0 },
+		{ 0, 0 }
+	};
+
+	if (!operands.uses_offsets) {
+		stu[0] += operands.offsets[0][0] / (float)image->width;
+		stu[1] += operands.offsets[0][1] / (float)image->height;
+		stu[2] += operands.offsets[0][2] / (float)image->depth;
+	}
+	else {
+		for (int i = 0; i < 4; i++) {
+			offs[i][0] = operands.offsets[i][0];
+			offs[i][1] = operands.offsets[i][1];
+		}
+	}
+
+	// todo: spvm_state_ddx/y(coord_id) ?
+
+	for (int i = 0; i < 4; i++) {
+		float* sample = spvm_image_sample(image, stu[0] + (offs[i][0] / (float)image->width), stu[1] + (offs[i][1] / (float)image->height), stu[2]);
+		state->results[id].members[i].value.f = sample[comp];
+	}
+}
+void spvm_execute_OpImageQuerySize(spvm_word word_count, spvm_state_t state)
+{
+	SPVM_SKIP_WORD(state->code_current);
+	spvm_word id = SPVM_READ_WORD(state->code_current);
+	spvm_word image_id = SPVM_READ_WORD(state->code_current);
+
+	spvm_image_t img = state->results[image_id].members[0].image_data;
+
+	if (state->results[id].member_count > 0)
+		state->results[id].members[0].value.s = img->width;
+	if (state->results[id].member_count > 1)
+		state->results[id].members[1].value.s = img->height;
+	if (state->results[id].member_count > 2)
+		state->results[id].members[2].value.s = img->depth;
 }
 
 /* 3.32.11 Conversion Instructions */
@@ -191,7 +350,7 @@ void spvm_execute_OpConvertFToU(spvm_word word_count, spvm_state_t state)
 
 	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[state->results[val].pointer]);
 
-	if (type_info->value_bitmask > 32)
+	if (type_info->value_bitcount > 32)
 		for (spvm_word i = 0; i < state->results[id].member_count; i++)
 			state->results[id].members[i].value.u64 = (unsigned long long)state->results[val].members[i].value.d;
 	else
@@ -206,7 +365,7 @@ void spvm_execute_OpConvertFToS(spvm_word word_count, spvm_state_t state)
 
 	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[state->results[val].pointer]);
 
-	if (type_info->value_bitmask > 32)
+	if (type_info->value_bitcount > 32)
 		for (spvm_word i = 0; i < state->results[id].member_count; i++)
 			state->results[id].members[i].value.s = (int)state->results[val].members[i].value.d;
 	else
@@ -221,7 +380,7 @@ void spvm_execute_OpConvertUToF(spvm_word word_count, spvm_state_t state)
 
 	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[type]);
 
-	if (type_info->value_bitmask > 32)
+	if (type_info->value_bitcount > 32)
 		for (spvm_word i = 0; i < state->results[id].member_count; i++)
 			state->results[id].members[i].value.d = (double)state->results[val].members[i].value.u;
 	else
@@ -236,12 +395,46 @@ void spvm_execute_OpConvertSToF(spvm_word word_count, spvm_state_t state)
 
 	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[type]);
 
-	if (type_info->value_bitmask > 32)
+	if (type_info->value_bitcount > 32)
 		for (spvm_word i = 0; i < state->results[id].member_count; i++)
 			state->results[id].members[i].value.d = (double)state->results[val].members[i].value.s;
 	else
 		for (spvm_word i = 0; i < state->results[id].member_count; i++)
 			state->results[id].members[i].value.f = (float)state->results[val].members[i].value.s;
+}
+void spvm_execute_OpUConvert(spvm_word word_count, spvm_state_t state)
+{
+	spvm_word res_type = SPVM_READ_WORD(state->code_current);
+	spvm_word id = SPVM_READ_WORD(state->code_current);
+	spvm_word val = SPVM_READ_WORD(state->code_current);
+
+	spvm_result_t res_type_info = spvm_state_get_type_info(state->results, &state->results[res_type]);
+	
+	unsigned long long mask = 0xFF;
+	if (res_type_info->value_bitcount == 16)
+		mask = 0xFFFF;
+	else if (res_type_info->value_bitcount == 32)
+		mask = 0xFFFFFFFF;
+
+	for (spvm_word i = 0; i < state->results[id].member_count; i++)
+		state->results[id].members[i].value.u64 = state->results[val].members[i].value.u64 & mask;
+}
+void spvm_execute_OpSConvert(spvm_word word_count, spvm_state_t state)
+{
+	spvm_word res_type = SPVM_READ_WORD(state->code_current);
+	spvm_word id = SPVM_READ_WORD(state->code_current);
+	spvm_word val = SPVM_READ_WORD(state->code_current);
+
+	spvm_result_t res_type_info = spvm_state_get_type_info(state->results, &state->results[res_type]);
+
+	int mask = 0xFF;
+	if (res_type_info->value_bitcount == 16)
+		mask = 0xFFFF;
+	else if (res_type_info->value_bitcount == 32)
+		mask = 0xFFFFFFFF;
+
+	for (spvm_word i = 0; i < state->results[id].member_count; i++)
+		state->results[id].members[i].value.s = state->results[val].members[i].value.s & mask;
 }
 void spvm_execute_OpFConvert(spvm_word word_count, spvm_state_t state)
 {
@@ -252,7 +445,7 @@ void spvm_execute_OpFConvert(spvm_word word_count, spvm_state_t state)
 	spvm_result_t res_type_info = spvm_state_get_type_info(state->results, &state->results[res_type]);
 	spvm_result_t val_info = spvm_state_get_type_info(state->results, &state->results[state->results[val].pointer]);
 
-	if (res_type_info->value_bitmask > val_info->value_bitmask)
+	if (res_type_info->value_bitcount > val_info->value_bitcount)
 		for (spvm_word i = 0; i < state->results[id].member_count; i++)
 			state->results[id].members[i].value.d = (double)state->results[val].members[i].value.f;
 	else
@@ -323,8 +516,7 @@ void spvm_execute_OpCompositeConstruct(spvm_word word_count, spvm_state_t state)
 		if (state->results[id].members[i].member_count == 0)
 			state->results[id].members[i].value.s = state->results[index].members[0].value.s;
 		else
-			for (spvm_word j = 0; j < state->results[index].member_count; j++)
-				state->results[id].members[i].members[j].value.s = state->results[index].members[j].value.s;
+			spvm_member_memcpy(&state->results[id].members[i].members[0], &state->results[index].members[0], state->results[index].member_count);
 	}
 }
 void spvm_execute_OpCompositeExtract(spvm_word word_count, spvm_state_t state)
@@ -387,7 +579,7 @@ void spvm_execute_OpFNegate(spvm_word word_count, spvm_state_t state)
 
 	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[type]);
 
-	if (type_info->value_bitmask > 32)
+	if (type_info->value_bitcount > 32)
 		for (spvm_word i = 0; i < state->results[id].member_count; i++)
 			state->results[id].members[i].value.d = -state->results[op].members[i].value.d;
 	else
@@ -414,7 +606,7 @@ void spvm_execute_OpFAdd(spvm_word word_count, spvm_state_t state)
 	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[type]);
 
 	// TODO: is there a better way to do this?
-	if (type_info->value_bitmask > 32)
+	if (type_info->value_bitcount > 32)
 		for (spvm_word i = 0; i < state->results[id].member_count; i++)
 			state->results[id].members[i].value.d = state->results[op1].members[i].value.d + state->results[op2].members[i].value.d;
 	else
@@ -441,7 +633,7 @@ void spvm_execute_OpFSub(spvm_word word_count, spvm_state_t state)
 	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[type]);
 
 	// TODO: is there a better way to do this?
-	if (type_info->value_bitmask > 32)
+	if (type_info->value_bitcount > 32)
 		for (spvm_word i = 0; i < state->results[id].member_count; i++)
 			state->results[id].members[i].value.d = state->results[op1].members[i].value.d - state->results[op2].members[i].value.d;
 	else
@@ -468,7 +660,7 @@ void spvm_execute_OpFMul(spvm_word word_count, spvm_state_t state)
 	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[type]);
 
 	// TODO: is there a better way to do this?
-	if (type_info->value_bitmask > 32)
+	if (type_info->value_bitcount > 32)
 		for (spvm_word i = 0; i < state->results[id].member_count; i++)
 			state->results[id].members[i].value.d = state->results[op1].members[i].value.d * state->results[op2].members[i].value.d;
 	else
@@ -505,7 +697,7 @@ void spvm_execute_OpFDiv(spvm_word word_count, spvm_state_t state)
 	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[type]);
 
 	// TODO: is there a better way to do this?
-	if (type_info->value_bitmask > 32)
+	if (type_info->value_bitcount > 32)
 		for (spvm_word i = 0; i < state->results[id].member_count; i++)
 			state->results[id].members[i].value.d = state->results[op1].members[i].value.d / state->results[op2].members[i].value.d;
 	else
@@ -542,7 +734,7 @@ void spvm_execute_OpFMod(spvm_word word_count, spvm_state_t state)
 	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[type]);
 
 	// TODO: is there a better way to do this?
-	if (type_info->value_bitmask > 32)
+	if (type_info->value_bitcount > 32)
 		for (spvm_word i = 0; i < state->results[id].member_count; i++)
 			state->results[id].members[i].value.d = fmod(state->results[op1].members[i].value.d, state->results[op2].members[i].value.d);
 	else
@@ -558,7 +750,7 @@ void spvm_execute_OpVectorTimesScalar(spvm_word word_count, spvm_state_t state)
 
 	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[type]);
 
-	if (type_info->value_bitmask > 32)
+	if (type_info->value_bitcount > 32)
 		for (spvm_word i = 0; i < state->results[id].member_count; i++)
 			state->results[id].members[i].value.d = state->results[vec].members[i].value.d * state->results[scalar].members[0].value.d;
 	else
@@ -576,7 +768,7 @@ void spvm_execute_OpMatrixTimesScalar(spvm_word word_count, spvm_state_t state)
 
 	spvm_word s1 = state->results[mat].member_count;
 	spvm_word s2 = state->results[mat].members[0].member_count;
-	if (type_info->value_bitmask > 32)
+	if (type_info->value_bitcount > 32)
 		for (spvm_word i = 0; i < s1; i++)
 			for (spvm_word j = 0; j < s2; j++)
 				state->results[id].members[i].members[j].value.d = state->results[mat].members[i].members[j].value.d * state->results[scalar].members[0].value.d;
@@ -596,7 +788,7 @@ void spvm_execute_OpVectorTimesMatrix(spvm_word word_count, spvm_state_t state)
 
 	spvm_word resSize = state->results[id].member_count;
 	spvm_word mySize = state->results[vec].member_count;
-	if (type_info->value_bitmask > 32) {
+	if (type_info->value_bitcount > 32) {
 		for (spvm_word i = 0; i < resSize; i++) {
 			double res = 0.0;
 
@@ -627,7 +819,7 @@ void spvm_execute_OpMatrixTimesVector(spvm_word word_count, spvm_state_t state)
 
 	spvm_word resSize = state->results[id].member_count;
 	spvm_word mySize = state->results[vec].member_count;
-	if (type_info->value_bitmask > 32) {
+	if (type_info->value_bitcount > 32) {
 		for (spvm_word i = 0; i < resSize; i++) {
 			double res = 0.0;
 
@@ -656,16 +848,27 @@ void spvm_execute_OpMatrixTimesMatrix(spvm_word word_count, spvm_state_t state)
 
 	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[type]);
 
-	spvm_word s1 = state->results[id].member_count;
-	spvm_word s2 = state->results[id].members[0].member_count;
-	if (type_info->value_bitmask > 32) {
-		for (spvm_word i = 0; i < s1; i++)
-			for (spvm_word j = 0; j < s2; j++)
-				state->results[id].members[i].members[j].value.d = state->results[left].members[i].members[j].value.d * state->results[right].members[i].members[j].value.d;
-	} else {
-		for (spvm_word i = 0; i < s1; i++)
-			for (spvm_word j = 0; j < s2; j++)
-				state->results[id].members[i].members[j].value.f = state->results[left].members[i].members[j].value.f * state->results[right].members[i].members[j].value.f;
+	spvm_word s1 = state->results[left].member_count;
+	spvm_word s2 = state->results[left].members[0].member_count;
+	spvm_word s3 = state->results[right].member_count;
+
+	if (type_info->value_bitcount > 32) {
+		for (spvm_word i = 0; i < s3; i++) {
+			for (spvm_word j = 0; j < s2; j++) {
+				state->results[id].members[i].members[j].value.u64 = 0;
+				for (spvm_word k = 0; k < s1; k++)
+					state->results[id].members[i].members[j].value.d += state->results[left].members[k].members[j].value.d * state->results[right].members[i].members[k].value.d;
+			}
+		}
+	}
+	else {
+		for (spvm_word i = 0; i < s3; i++) {
+			for (spvm_word j = 0; j < s2; j++) {
+				state->results[id].members[i].members[j].value.u64 = 0;
+				for (spvm_word k = 0; k < s1; k++)
+					state->results[id].members[i].members[j].value.f += state->results[left].members[k].members[j].value.f * state->results[right].members[i].members[k].value.f;
+			}
+		}
 	}
 }
 void spvm_execute_OpOuterProduct(spvm_word word_count, spvm_state_t state)
@@ -679,7 +882,7 @@ void spvm_execute_OpOuterProduct(spvm_word word_count, spvm_state_t state)
 
 	spvm_word s1 = state->results[id].member_count;
 	spvm_word s2 = state->results[id].members[0].member_count;
-	if (type_info->value_bitmask > 32) {
+	if (type_info->value_bitcount > 32) {
 		for (spvm_word i = 0; i < s1; i++)
 			for (spvm_word j = 0; j < s2; j++)
 				state->results[id].members[i].members[j].value.d = state->results[vec1].members[i].value.d * state->results[vec2].members[j].value.d;
@@ -698,7 +901,7 @@ void spvm_execute_OpDot(spvm_word word_count, spvm_state_t state)
 
 	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[type]);
 
-	if (type_info->value_bitmask > 32) {
+	if (type_info->value_bitcount > 32) {
 		double dot = 0.0;
 		for (spvm_word i = 0; i < state->results[vec1].member_count; i++)
 			dot += state->results[vec1].members[i].value.d * state->results[vec2].members[i].value.d;
@@ -852,11 +1055,14 @@ void spvm_execute_OpSelect(spvm_word word_count, spvm_state_t state)
 	spvm_word obj1 = SPVM_READ_WORD(state->code_current);
 	spvm_word obj2 = SPVM_READ_WORD(state->code_current);
 
-	// TODO: vectors
-	spvm_byte condValue = state->results[id].members[0].value.b;
-	spvm_word obj = condValue ? obj1 : obj2;
-
-	spvm_member_memcpy(state->results[id].members, state->results[obj].members, state->results[obj].member_count);
+	for (spvm_word i = 0; i < state->results[id].member_count; i++) {
+		spvm_byte condValue = state->results[cond].members[0].value.b;
+		spvm_word obj = condValue ? obj1 : obj2;
+		if (state->results[id].members[i].member_count == 0)
+			state->results[id].members[i].value.s = state->results[obj].members[0].value.s;
+		else
+			spvm_member_memcpy(&state->results[id].members[i].members[0], &state->results[obj].members[0], state->results[obj].member_count);
+	}
 }
 void spvm_execute_OpIEqual(spvm_word word_count, spvm_state_t state)
 {
@@ -967,7 +1173,7 @@ void spvm_execute_OpFOrdEqual(spvm_word word_count, spvm_state_t state)
 
 	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[type]);
 
-	if (type_info->value_bitmask > 32)
+	if (type_info->value_bitcount > 32)
 		for (spvm_word i = 0; i < state->results[id].member_count; i++)
 			state->results[id].members[i].value.b = state->results[op1].members[i].value.d == state->results[op2].members[i].value.d;
 	else
@@ -983,7 +1189,7 @@ void spvm_execute_OpFOrdNotEqual(spvm_word word_count, spvm_state_t state)
 
 	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[type]);
 
-	if (type_info->value_bitmask > 32)
+	if (type_info->value_bitcount > 32)
 		for (spvm_word i = 0; i < state->results[id].member_count; i++)
 			state->results[id].members[i].value.b = state->results[op1].members[i].value.d != state->results[op2].members[i].value.d;
 	else
@@ -999,7 +1205,7 @@ void spvm_execute_OpFOrdLessThan(spvm_word word_count, spvm_state_t state)
 
 	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[type]);
 
-	if (type_info->value_bitmask > 32)
+	if (type_info->value_bitcount > 32)
 		for (spvm_word i = 0; i < state->results[id].member_count; i++)
 			state->results[id].members[i].value.b = state->results[op1].members[i].value.d < state->results[op2].members[i].value.d;
 	else
@@ -1015,7 +1221,7 @@ void spvm_execute_OpFOrdGreaterThan(spvm_word word_count, spvm_state_t state)
 
 	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[type]);
 
-	if (type_info->value_bitmask > 32)
+	if (type_info->value_bitcount > 32)
 		for (spvm_word i = 0; i < state->results[id].member_count; i++)
 			state->results[id].members[i].value.b = state->results[op1].members[i].value.d > state->results[op2].members[i].value.d;
 	else
@@ -1031,7 +1237,7 @@ void spvm_execute_OpFOrdLessThanEqual(spvm_word word_count, spvm_state_t state)
 
 	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[type]);
 
-	if (type_info->value_bitmask > 32)
+	if (type_info->value_bitcount > 32)
 		for (spvm_word i = 0; i < state->results[id].member_count; i++)
 			state->results[id].members[i].value.b = state->results[op1].members[i].value.d <= state->results[op2].members[i].value.d;
 	else
@@ -1047,7 +1253,7 @@ void spvm_execute_OpFOrdGreaterThanEqual(spvm_word word_count, spvm_state_t stat
 
 	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[type]);
 
-	if (type_info->value_bitmask > 32)
+	if (type_info->value_bitcount > 32)
 		for (spvm_word i = 0; i < state->results[id].member_count; i++)
 			state->results[id].members[i].value.b = state->results[op1].members[i].value.d >= state->results[op2].members[i].value.d;
 	else
@@ -1055,7 +1261,107 @@ void spvm_execute_OpFOrdGreaterThanEqual(spvm_word word_count, spvm_state_t stat
 			state->results[id].members[i].value.b = state->results[op1].members[i].value.f >= state->results[op2].members[i].value.f;
 }
 
+/* 3.32.16 Derivative Instructions */
+void spvm_execute_OpDPdx(spvm_word word_count, spvm_state_t state)
+{
+	SPVM_SKIP_WORD(state->code_current);
+	spvm_word res_id = SPVM_READ_WORD(state->code_current);
+	spvm_word P_id = SPVM_READ_WORD(state->code_current);
+
+	int index = 0;
+
+	spvm_state_ddx(state, P_id);
+
+	for (spvm_word i = 0; i < state->results[res_id].member_count; i++) {
+		if (state->results[res_id].members[i].member_count == 0) {
+			state->results[res_id].members[i].value.f = state->derivative_buffer_x[index];
+			index++;
+		}
+		else {
+			for (spvm_word j = 0; j < state->results[res_id].members[i].member_count; j++)
+				state->results[res_id].members[i].members[j].value.f = state->derivative_buffer_x[index];
+			index += state->results[res_id].members[i].member_count;
+		}
+	}
+
+	if (!state->_derivative_is_group_member)
+		spvm_state_group_step(state);
+}
+void spvm_execute_OpDPdy(spvm_word word_count, spvm_state_t state)
+{
+	SPVM_SKIP_WORD(state->code_current);
+	spvm_word res_id = SPVM_READ_WORD(state->code_current);
+	spvm_word P_id = SPVM_READ_WORD(state->code_current);
+
+	int index = 0;
+
+	spvm_state_ddy(state, P_id);
+
+	for (spvm_word i = 0; i < state->results[res_id].member_count; i++) {
+		if (state->results[res_id].members[i].member_count == 0) {
+			state->results[res_id].members[i].value.f = state->derivative_buffer_y[index];
+			index++;
+		}
+		else {
+			for (spvm_word j = 0; j < state->results[res_id].members[i].member_count; j++)
+				state->results[res_id].members[i].members[j].value.f = state->derivative_buffer_y[index];
+			index += state->results[res_id].members[i].member_count;
+		}
+	}
+
+	if (!state->_derivative_is_group_member)
+		spvm_state_group_step(state);
+}
+void spvm_execute_OpFwidth(spvm_word word_count, spvm_state_t state)
+{
+	SPVM_SKIP_WORD(state->code_current);
+	spvm_word res_id = SPVM_READ_WORD(state->code_current);
+	spvm_word P_id = SPVM_READ_WORD(state->code_current);
+
+	int index = 0;
+
+	spvm_state_ddx(state, P_id);
+	spvm_state_ddy(state, P_id);
+
+	for (spvm_word i = 0; i < state->results[res_id].member_count; i++) {
+		if (state->results[res_id].members[i].member_count == 0) {
+			state->results[res_id].members[i].value.f = fabsf(state->derivative_buffer_x[index]) + fabsf(state->derivative_buffer_y[index]);
+			index++;
+		}
+		else {
+			for (spvm_word j = 0; j < state->results[res_id].members[i].member_count; j++)
+				state->results[res_id].members[i].members[j].value.f = fabsf(state->derivative_buffer_x[index]) + fabsf(state->derivative_buffer_y[index]);
+			index += state->results[res_id].members[i].member_count;
+		}
+	}
+
+	if (!state->_derivative_is_group_member)
+		spvm_state_group_step(state);
+}
+
 /* 3.32.17 Control-Flow Instructions */
+void spvm_execute_OpPhi(spvm_word word_count, spvm_state_t state)
+{
+	SPVM_SKIP_WORD(state->code_current);
+	spvm_word id = SPVM_READ_WORD(state->code_current);
+
+	word_count = (word_count - 2) / 2;
+
+	for (spvm_word i = 0; i < word_count; i++) {
+		spvm_word variable = SPVM_READ_WORD(state->code_current);
+		spvm_word parent = SPVM_READ_WORD(state->code_current);
+
+		if (parent == state->function_stack_cfg[state->function_stack_current]) {
+			spvm_member_memcpy(state->results[id].members, state->results[variable].members, state->results[id].member_count);
+			break;
+		}
+	}
+}
+void spvm_execute_OpLabel(spvm_word word_count, spvm_state_t state)
+{
+	spvm_word id = SPVM_READ_WORD(state->code_current);
+	state->function_stack_cfg[state->function_stack_current] = id;
+}
 void spvm_execute_OpBranch(spvm_word word_count, spvm_state_t state)
 {
 	spvm_word id = SPVM_READ_WORD(state->code_current);
@@ -1109,9 +1415,39 @@ void spvm_execute_OpKill(spvm_word word_count, spvm_state_t state)
 	state->discarded = 1;
 }
 
+/* 3.32.19 Primitive Instructions */
+void spvm_execute_OpEmitVertex(spvm_word word_count, spvm_state_t state)
+{
+	if (state->emit_vertex)
+		state->emit_vertex(state, 0);
+}
+void spvm_execute_OpEndPrimitive(spvm_word word_count, spvm_state_t state)
+{
+	if (state->end_primitive)
+		state->end_primitive(state, 0);
+}
+void spvm_execute_OpEmitStreamVertex(spvm_word word_count, spvm_state_t state)
+{
+	if (state->emit_vertex) {
+		spvm_word stream_id = SPVM_READ_WORD(state->code_current);
+		state->emit_vertex(state, state->results[stream_id].members[0].value.u);
+	}
+}
+void spvm_execute_OpEndStreamPrimitive(spvm_word word_count, spvm_state_t state)
+{
+	if (state->end_primitive) {
+		spvm_word stream_id = SPVM_READ_WORD(state->code_current);
+		state->end_primitive(state, state->results[stream_id].members[0].value.u);
+	}
+}
+
+
 void _spvm_context_create_execute_table(spvm_context_t ctx)
 {
 	ctx->opcode_execute = (spvm_opcode_func*)calloc(SPVM_OPCODE_TABLE_LENGTH, sizeof(spvm_opcode_func));
+
+	ctx->opcode_execute[SpvOpLabel] = spvm_execute_OpLabel;
+	ctx->opcode_execute[SpvOpPhi] = spvm_execute_OpPhi;
 
 	ctx->opcode_execute[SpvOpLine] = spvm_execute_OpLine;
 	ctx->opcode_execute[SpvOpNoLine] = spvm_execute_OpNoLine;
@@ -1134,6 +1470,8 @@ void _spvm_context_create_execute_table(spvm_context_t ctx)
 	ctx->opcode_execute[SpvOpConvertFToS] = spvm_execute_OpConvertFToS;
 	ctx->opcode_execute[SpvOpConvertUToF] = spvm_execute_OpConvertUToF;
 	ctx->opcode_execute[SpvOpConvertSToF] = spvm_execute_OpConvertSToF;
+	ctx->opcode_execute[SpvOpUConvert] = spvm_execute_OpUConvert;
+	ctx->opcode_execute[SpvOpSConvert] = spvm_execute_OpSConvert;
 	ctx->opcode_execute[SpvOpFConvert] = spvm_execute_OpFConvert;
 	ctx->opcode_execute[SpvOpBitcast] = spvm_execute_OpBitcast;
 
@@ -1200,9 +1538,27 @@ void _spvm_context_create_execute_table(spvm_context_t ctx)
 	ctx->opcode_execute[SpvOpFOrdGreaterThanEqual] = spvm_execute_OpFOrdGreaterThanEqual;
 
 	ctx->opcode_execute[SpvOpImageSampleImplicitLod] = spvm_execute_OpImageSampleImplicitLod;
+	ctx->opcode_execute[SpvOpImageFetch] = spvm_execute_OpImageFetch;
+	ctx->opcode_execute[SpvOpImageGather] = spvm_execute_OpImageGather;
+	ctx->opcode_execute[SpvOpImageQuerySize] = spvm_execute_OpImageQuerySize;
+
+	ctx->opcode_execute[SpvOpDPdx] = spvm_execute_OpDPdx;
+	ctx->opcode_execute[SpvOpDPdxFine] = spvm_execute_OpDPdx;
+	ctx->opcode_execute[SpvOpDPdxCoarse] = spvm_execute_OpDPdx;
+	ctx->opcode_execute[SpvOpDPdy] = spvm_execute_OpDPdy;
+	ctx->opcode_execute[SpvOpDPdyFine] = spvm_execute_OpDPdy;
+	ctx->opcode_execute[SpvOpDPdyCoarse] = spvm_execute_OpDPdy;
+	ctx->opcode_execute[SpvOpFwidth] = spvm_execute_OpFwidth;
+	ctx->opcode_execute[SpvOpFwidthFine] = spvm_execute_OpFwidth;
+	ctx->opcode_execute[SpvOpFwidthCoarse] = spvm_execute_OpFwidth;
 
 	ctx->opcode_execute[SpvOpBranch] = spvm_execute_OpBranch;
 	ctx->opcode_execute[SpvOpBranchConditional] = spvm_execute_OpBranchConditional;
 	ctx->opcode_execute[SpvOpSwitch] = spvm_execute_OpSwitch;
 	ctx->opcode_execute[SpvOpKill] = spvm_execute_OpKill;
+
+	ctx->opcode_execute[SpvOpEmitVertex] = spvm_execute_OpEmitVertex;
+	ctx->opcode_execute[SpvOpEndPrimitive] = spvm_execute_OpEndPrimitive;
+	ctx->opcode_execute[SpvOpEmitStreamVertex] = spvm_execute_OpEmitStreamVertex;
+	ctx->opcode_execute[SpvOpEndStreamPrimitive] = spvm_execute_OpEndStreamPrimitive;
 }

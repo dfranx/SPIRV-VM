@@ -117,7 +117,7 @@ void spvm_setup_OpTypeVoid(spvm_word word_count, spvm_state_t state)
 	spvm_word store_id = SPVM_READ_WORD(state->code_current);
 	state->results[store_id].type = spvm_result_type_type;
 	state->results[store_id].value_type = spvm_value_type_void;
-	state->results[store_id].value_bitmask = 0;
+	state->results[store_id].value_bitcount = 0;
 	state->results[store_id].member_count = 0;
 }
 void spvm_setup_OpTypeBool(spvm_word word_count, spvm_state_t state)
@@ -125,7 +125,7 @@ void spvm_setup_OpTypeBool(spvm_word word_count, spvm_state_t state)
 	spvm_word store_id = SPVM_READ_WORD(state->code_current);
 	state->results[store_id].type = spvm_result_type_type;
 	state->results[store_id].value_type = spvm_value_type_bool;
-	state->results[store_id].value_bitmask = 1;
+	state->results[store_id].value_bitcount = 1;
 	state->results[store_id].member_count = 1;
 }
 void spvm_setup_OpTypeInt(spvm_word word_count, spvm_state_t state)
@@ -133,7 +133,7 @@ void spvm_setup_OpTypeInt(spvm_word word_count, spvm_state_t state)
 	spvm_word store_id = SPVM_READ_WORD(state->code_current);
 	state->results[store_id].type = spvm_result_type_type;
 	state->results[store_id].value_type = spvm_value_type_int;
-	state->results[store_id].value_bitmask = SPVM_READ_WORD(state->code_current);
+	state->results[store_id].value_bitcount = SPVM_READ_WORD(state->code_current);
 	state->results[store_id].value_sign = SPVM_READ_WORD(state->code_current);
 	state->results[store_id].member_count = 1;
 }
@@ -142,7 +142,7 @@ void spvm_setup_OpTypeFloat(spvm_word word_count, spvm_state_t state)
 	spvm_word store_id = SPVM_READ_WORD(state->code_current);
 	state->results[store_id].type = spvm_result_type_type;
 	state->results[store_id].value_type = spvm_value_type_float;
-	state->results[store_id].value_bitmask = SPVM_READ_WORD(state->code_current);
+	state->results[store_id].value_bitcount = SPVM_READ_WORD(state->code_current);
 	state->results[store_id].member_count = 1;
 }
 void spvm_setup_OpTypeVector(spvm_word word_count, spvm_state_t state)
@@ -169,8 +169,18 @@ void spvm_setup_OpTypeImage(spvm_word word_count, spvm_state_t state)
 	state->results[id].type = spvm_result_type_type;
 	state->results[id].value_type = spvm_value_type_image;
 	state->results[id].pointer = SPVM_READ_WORD(state->code_current);
-	state->results[id].image_dimension = SPVM_READ_WORD(state->code_current);
 	state->results[id].member_count = 1;
+
+	spvm_image_info* info = state->results[id].image_info = calloc(1, sizeof(spvm_image_info));
+	info->dim = SPVM_READ_WORD(state->code_current);
+	info->depth = SPVM_READ_WORD(state->code_current);
+	info->arrayed = SPVM_READ_WORD(state->code_current);
+	info->ms = SPVM_READ_WORD(state->code_current);
+	info->sampled = SPVM_READ_WORD(state->code_current);
+	info->format = SPVM_READ_WORD(state->code_current);
+	
+	if (word_count > 8)
+		info->access = SPVM_READ_WORD(state->code_current);
 }
 void spvm_setup_OpTypeSampledImage(spvm_word word_count, spvm_state_t state)
 {
@@ -187,7 +197,7 @@ void spvm_setup_OpTypeArray(spvm_word word_count, spvm_state_t state)
 	state->results[store_id].value_type = spvm_value_type_array;
 
 	state->results[store_id].pointer = SPVM_READ_WORD(state->code_current);
-	state->results[store_id].member_count = SPVM_READ_WORD(state->code_current);
+	state->results[store_id].member_count = state->results[SPVM_READ_WORD(state->code_current)].members[0].value.s;
 }
 void spvm_setup_OpTypeStruct(spvm_word word_count, spvm_state_t state)
 {
@@ -267,7 +277,7 @@ void spvm_setup_OpConstant(spvm_word word_count, spvm_state_t state)
 	state->results[id].members[0].value.u64 = SPVM_READ_WORD(state->code_current);
 
 	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[var_type]);
-	if (type_info->value_bitmask > 32) {
+	if (type_info->value_bitcount > 32) {
 		unsigned long long highBits = SPVM_READ_WORD(state->code_current);
 		state->results[id].members[0].value.u64 |= highBits << 32ull;
 	}
@@ -282,7 +292,11 @@ void spvm_setup_OpConstantComposite(spvm_word word_count, spvm_state_t state)
 
 	for (spvm_word i = 0; i < state->results[id].member_count; i++) {
 		spvm_word index = SPVM_READ_WORD(state->code_current);
-		state->results[id].members[i].value.s = state->results[index].members[0].value.s;
+
+		if (state->results[id].members[i].member_count == 0)
+			state->results[id].members[i].value.s = state->results[index].members[0].value.s;
+		else
+			spvm_member_memcpy(&state->results[id].members[i].members[0], &state->results[index].members[0], state->results[index].member_count);
 	}
 }
 
@@ -369,6 +383,14 @@ void spvm_setup_constant(spvm_word word_count, spvm_state_t state)
 	spvm_result_allocate_typed_value(&state->results[id], state->results, res_type);
 }
 
+/* 3.32.16 Derivative Instructions */
+void spvm_setup_derivative(spvm_word word_count, spvm_state_t state)
+{
+	spvm_setup_constant(word_count, state);
+	state->derivative_used = 1;
+}
+
+
 /* 3.32.17 Control-Flow Instructions */
 void spvm_setup_OpLabel(spvm_word word_count, spvm_state_t state)
 {
@@ -430,6 +452,8 @@ void _spvm_context_create_setup_table(spvm_context_t ctx)
 	ctx->opcode_setup[SpvOpConvertFToS] = spvm_setup_constant;
 	ctx->opcode_setup[SpvOpConvertUToF] = spvm_setup_constant;
 	ctx->opcode_setup[SpvOpConvertSToF] = spvm_setup_constant;
+	ctx->opcode_setup[SpvOpUConvert] = spvm_setup_constant;
+	ctx->opcode_setup[SpvOpSConvert] = spvm_setup_constant;
 	ctx->opcode_setup[SpvOpFConvert] = spvm_setup_constant;
 	ctx->opcode_setup[SpvOpBitcast] = spvm_setup_constant;
 
@@ -496,6 +520,20 @@ void _spvm_context_create_setup_table(spvm_context_t ctx)
 	ctx->opcode_setup[SpvOpFOrdGreaterThanEqual] = spvm_setup_constant;
 
 	ctx->opcode_setup[SpvOpImageSampleImplicitLod] = spvm_setup_constant;
+	ctx->opcode_setup[SpvOpImageFetch] = spvm_setup_constant;
+	ctx->opcode_setup[SpvOpImageGather] = spvm_setup_constant;
+	ctx->opcode_setup[SpvOpImageQuerySize] = spvm_setup_constant;
+
+	ctx->opcode_setup[SpvOpDPdx] = spvm_setup_derivative;
+	ctx->opcode_setup[SpvOpDPdy] = spvm_setup_derivative;
+	ctx->opcode_setup[SpvOpDPdxFine] = spvm_setup_derivative;
+	ctx->opcode_setup[SpvOpDPdyFine] = spvm_setup_derivative;
+	ctx->opcode_setup[SpvOpDPdxCoarse] = spvm_setup_derivative;
+	ctx->opcode_setup[SpvOpDPdyCoarse] = spvm_setup_derivative;
+	ctx->opcode_setup[SpvOpFwidth] = spvm_setup_derivative;
+	ctx->opcode_setup[SpvOpFwidthFine] = spvm_setup_derivative;
+	ctx->opcode_setup[SpvOpFwidthCoarse] = spvm_setup_derivative;
 
 	ctx->opcode_setup[SpvOpLabel] = spvm_setup_OpLabel;
+	ctx->opcode_setup[SpvOpPhi] = spvm_setup_constant;
 }

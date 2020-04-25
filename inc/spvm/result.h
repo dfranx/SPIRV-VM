@@ -20,8 +20,14 @@ enum spvm_result_type {
 	spvm_result_type_label
 };
 typedef struct {
-	spvm_word argc;
-} spvm_function_info;
+	SpvDim dim;
+	spvm_byte depth;
+	spvm_byte arrayed;
+	spvm_byte ms;
+	spvm_byte sampled;
+	SpvImageFormat format;
+	SpvAccessQualifier access;
+} spvm_image_info;
 typedef struct {
 	SpvDecoration type;
 	spvm_word literal1, literal2;
@@ -59,9 +65,9 @@ typedef struct spvm_result {
 
 	/* op type */
 	char value_type;
-	spvm_word value_bitmask;
+	spvm_word value_bitcount;
 	char value_sign;
-	SpvDim image_dimension;
+	spvm_image_info* image_info;
 } spvm_result;
 typedef spvm_result* spvm_result_t;
 

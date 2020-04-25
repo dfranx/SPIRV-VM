@@ -37,9 +37,9 @@ Before debugging your shader, you have to initialize global and uniform variable
 
 To set a single uniform:
 ```c
-float someUniformData = 0.5f;
+float someUniformData[2] = { 0.5f, 0.6f };
 spvm_result_t someUniform = spvm_state_get_result(state, "someUniform");
-spvm_member_set_value_f(someUniform->members, someUniform->member_count, &someUniformData);
+spvm_member_set_value_f(someUniform->members, someUniform->member_count, someUniformData); // vec2
 ```
 
 But if you are using newer GLSL version, you probably have to deal with interface blocks:
@@ -65,7 +65,7 @@ You can run your shader in two different ways. You can step line by line through
 This can be done with the `spvm_state_step_into` function (which executes only one line).
 Or you can execute whole shader with a single function call:
 ```c
-spvm_source fnMain = spvm_state_get_result(state, "main");
+spvm_result_t fnMain = spvm_state_get_result(state, "main");
 spvm_state_prepare(state, fnMain);
 spvm_state_call_function(state);
 ```
@@ -109,10 +109,9 @@ make
 ```
 
 ## TODO
-- only 2D images are currently supported
-- only three image instructions are implemented: OpTypeImage, OpTypeSampledImage and OpImageSampleImplicitLod
+- better image support (mipmaps, image arrays, samplers)
 
-Contact me through this e-mail address: **dfranx at shadered dot org**
+Contact me on this e-mail address: **dfranx at shadered dot org**
 
 ## LICENSE
 SPIRV-VM is licensed under MIT license. See [LICENSE](./LICENSE) for more details.
