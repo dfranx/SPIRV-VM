@@ -237,6 +237,15 @@ void spvm_execute_OpImageSampleImplicitLod(spvm_word word_count, spvm_state_t st
 	for (spvm_word i = 0; i < state->results[id].member_count; i++)
 		state->results[id].members[i].value.f = *(px + i);
 }
+void spvm_execute_OpSampledImage(spvm_word word_count, spvm_state_t state)
+{
+	SPVM_SKIP_WORD(state->code_current);
+	spvm_word id = SPVM_READ_WORD(state->code_current);
+	spvm_word image_id = SPVM_READ_WORD(state->code_current);
+
+	// TODO: sampler
+	state->results[id].members[0].image_data = state->results[image_id].members[0].image_data;
+}
 void spvm_execute_OpImageFetch(spvm_word word_count, spvm_state_t state)
 {
 	spvm_word res_type = SPVM_READ_WORD(state->code_current);
@@ -1537,6 +1546,7 @@ void _spvm_context_create_execute_table(spvm_context_t ctx)
 	ctx->opcode_execute[SpvOpFOrdLessThanEqual] = spvm_execute_OpFOrdLessThanEqual;
 	ctx->opcode_execute[SpvOpFOrdGreaterThanEqual] = spvm_execute_OpFOrdGreaterThanEqual;
 
+	ctx->opcode_execute[SpvOpSampledImage] = spvm_execute_OpSampledImage;
 	ctx->opcode_execute[SpvOpImageSampleImplicitLod] = spvm_execute_OpImageSampleImplicitLod;
 	ctx->opcode_execute[SpvOpImageFetch] = spvm_execute_OpImageFetch;
 	ctx->opcode_execute[SpvOpImageGather] = spvm_execute_OpImageGather;

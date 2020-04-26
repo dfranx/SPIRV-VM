@@ -72,8 +72,10 @@ void spvm_member_allocate_typed_value(spvm_member_t val, spvm_result* results, s
 	val->type = type;
 
 	if (type_info->value_type == spvm_value_type_struct) {
-		for (spvm_word i = 0; i < val->member_count; i++)
+		for (spvm_word i = 0; i < val->member_count; i++) {
+			val->members[i].type = type_info->params[i];
 			spvm_member_allocate_typed_value(&val->members[i], results, type_info->params[i]);
+		}
 	}
 	else if (type_info->value_type == spvm_value_type_matrix) {
 		for (spvm_word i = 0; i < val->member_count; i++)

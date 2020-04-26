@@ -519,6 +519,7 @@ void _spvm_context_create_setup_table(spvm_context_t ctx)
 	ctx->opcode_setup[SpvOpFOrdLessThanEqual] = spvm_setup_constant;
 	ctx->opcode_setup[SpvOpFOrdGreaterThanEqual] = spvm_setup_constant;
 
+	ctx->opcode_setup[SpvOpSampledImage] = spvm_setup_constant;
 	ctx->opcode_setup[SpvOpImageSampleImplicitLod] = spvm_setup_constant;
 	ctx->opcode_setup[SpvOpImageFetch] = spvm_setup_constant;
 	ctx->opcode_setup[SpvOpImageGather] = spvm_setup_constant;
