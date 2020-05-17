@@ -113,3 +113,33 @@ void spvm_result_allocate_typed_value(spvm_result_t val, spvm_result* results, s
 				spvm_member_allocate_typed_value(&val->members[i], results, type_info->pointer);
 	}
 }
+
+spvm_word spvm_result_calculate_size(spvm_result_t results, spvm_word type)
+{
+	spvm_word ret = 0;
+	spvm_result_t slot = &results[type];
+
+	if (slot->value_type == spvm_value_type_vector || slot->value_type == spvm_value_type_matrix || slot->value_type == spvm_value_type_array || slot->value_type == spvm_value_type_runtime_array)
+		ret += slot->member_count * spvm_result_calculate_size(results, slot->pointer);
+	else if (slot->value_type == spvm_value_type_float || slot->value_type == spvm_value_type_int || slot->value_type == spvm_value_type_bool)
+		ret++;
+	else if (slot->value_type == spvm_value_type_struct) {
+		for (spvm_word i = 0; i < slot->member_count; i++)
+			ret += spvm_result_calculate_size(results, slot->params[i]);
+	}
+	// TODO: slot->params[0];
+
+	return ret;
+}
+void spvm_member_recursive_fill(spvm_result_t results, float* data, spvm_member_t values, spvm_word value_count, spvm_word element_type, spvm_word* offset)
+{
+	spvm_result_t type_info = &results[element_type];
+	for (spvm_word i = 0; i < value_count; i++) {
+		if (values[i].member_count != 0)
+			spvm_member_recursive_fill(results, data, values[i].members, values[i].member_count, type_info->pointer, offset);
+		else {
+			values[i].value.f = *(data + *offset);
+			(*offset)++;
+		}
+	}
+}

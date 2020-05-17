@@ -67,6 +67,25 @@ spvm_result_t spvm_state_get_type_info(spvm_result_t res_list, spvm_result_t res
 		return spvm_state_get_type_info(res_list, &res_list[res->pointer]);
 	return res;
 }
+void spvm_state_set_extension(spvm_state_t state, const spvm_string name, spvm_ext_opcode_func* ext)
+{
+	spvm_result_t ptr = spvm_state_get_result(state, name);
+	if (ptr) ptr->extension = ext;
+	if (!state->_derivative_is_group_member) {
+		if (state->derivative_group_x) {
+			ptr = spvm_state_get_result(state->derivative_group_x, name);
+			if (ptr) ptr->extension = ext;
+		}
+		if (state->derivative_group_y) {
+			ptr = spvm_state_get_result(state->derivative_group_y, name);
+			if (ptr) ptr->extension = ext;
+		}
+		if (state->derivative_group_d) {
+			ptr = spvm_state_get_result(state->derivative_group_d, name);
+			if (ptr) ptr->extension = ext;
+		}
+	}
+}
 
 void spvm_state_prepare(spvm_state_t state, spvm_result_t code)
 {
@@ -102,11 +121,12 @@ void spvm_state_set_frag_coord(spvm_state_t state, float x, float y, float z, fl
 	state->frag_coord[2] = z;
 	state->frag_coord[3] = w;
 
-	spvm_result_t fc = spvm_state_get_builtin(state, SpvBuiltInFragCoord);
+	spvm_word fc_count = 0;
+	spvm_member_t fc = spvm_state_get_builtin(state, SpvBuiltInFragCoord, &fc_count);
 
 	if (fc) {
-		for (spvm_word i = 0; i < fc->member_count; i++)
-			fc->members[i].value.f = state->frag_coord[i];
+		for (spvm_word i = 0; i < fc_count; i++)
+			fc[i].value.f = state->frag_coord[i];
 
 		if (state->derivative_used && !state->_derivative_is_group_member) {
 			spvm_byte is_odd_x = ((int)x) % 2 != 0;
@@ -283,13 +303,48 @@ void spvm_state_ddy(spvm_state_t state, spvm_word id)
 	}
 }
 
-spvm_result_t spvm_state_get_builtin(spvm_state_t state, SpvBuiltIn builtin)
+spvm_member_t spvm_state_get_builtin(spvm_state_t state, SpvBuiltIn builtin, spvm_word* mem_count)
 {
-	for (spvm_word i = 0; i < state->owner->bound; i++)
-		for (spvm_word j = 0; j < state->results[i].decoration_count; j++)
-			if (state->results[i].decorations[j].type == SpvDecorationBuiltIn &&
-				state->results[i].decorations[j].literal1 == builtin)
-				return &state->results[i];
+	for (spvm_word i = 0; i < state->owner->bound; i++) {
+		spvm_result_t slot = &state->results[i];
+		spvm_result_t type = NULL;
+
+		if (slot->pointer)
+			type = spvm_state_get_type_info(state->results, &state->results[slot->pointer]);
+
+		if (type == NULL || slot->member_count == 0 || slot->members == NULL)
+			continue;
+
+		int found = 0;
+		int index = -1;
+		for (spvm_word j = 0; j < slot->decoration_count; j++)
+			if (slot->decorations[j].type == SpvDecorationBuiltIn) {
+				if (slot->decorations[j].literal1 == builtin) {
+					found = 1;
+					break;
+				}
+			}
+
+		for (spvm_word j = 0; j < type->decoration_count; j++)
+			if (type->decorations[j].type == SpvDecorationBuiltIn) {
+				if (type->decorations[j].literal1 == builtin) {
+					found = 1;
+					index = type->decorations[j].index;
+					break;
+				}
+			}
+
+		if (found) {
+			if (index == -1) {
+				*mem_count = slot->member_count;
+				return slot->members;
+			} else {
+				*mem_count = slot->members[index].member_count;
+				return slot->members[index].members;
+			}
+		}
+	}
+
 	return NULL;
 }
 spvm_result_t spvm_state_get_local_result(spvm_state_t state, spvm_result_t fn, const spvm_string str)
@@ -304,7 +359,15 @@ spvm_result_t spvm_state_get_local_result(spvm_state_t state, spvm_result_t fn, 
 spvm_result_t spvm_state_get_result(spvm_state_t state, const spvm_string str)
 {
 	for (spvm_word i = 0; i < state->owner->bound; i++)
-		if (state->results[i].name != NULL && strcmp(state->results[i].name, str) == 0)
+		if (state->results[i].name != NULL && strcmp(state->results[i].name, str) == 0 && state->results[i].owner == NULL)
+			return &state->results[i];
+
+	return NULL;
+}
+spvm_result_t spvm_state_get_result_with_value(spvm_state_t state, const spvm_string str)
+{
+	for (spvm_word i = 0; i < state->owner->bound; i++)
+		if (state->results[i].name != NULL && strcmp(state->results[i].name, str) == 0 && state->results[i].owner == NULL && state->results[i].members != NULL)
 			return &state->results[i];
 
 	return NULL;

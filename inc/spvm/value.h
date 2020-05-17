@@ -10,6 +10,7 @@
 #define NMAX(x, y) (isnan(x) ? (y) : (isnan(y) ? (x) : MAX(x,y)))
 #define NMIN(x, y) (isnan(x) ? (y) : (isnan(y) ? (x) : MIN(x,y)))
 #define NCLAMP(x, minVal, maxVal) NMIN(NMAX((x), (minVal)), (maxVal))
+#define SIGN(x) ((x) > 0) - ((x) < 0)
 
 enum spvm_value_type
 {
@@ -20,6 +21,7 @@ enum spvm_value_type
 	spvm_value_type_vector,
 	spvm_value_type_matrix,
 	spvm_value_type_array,
+	spvm_value_type_runtime_array,
 	spvm_value_type_struct,
 	spvm_value_type_image,
 	spvm_value_type_sampled_image,

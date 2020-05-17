@@ -53,6 +53,7 @@ spvm_result_t spvm_state_get_type_info(spvm_result_t res_list, spvm_result_t res
 
 spvm_state_t spvm_state_create(spvm_program_t prog);
 spvm_state_t _spvm_state_create_base(spvm_program_t prog, spvm_byte is_derv_member);
+void spvm_state_set_extension(spvm_state_t state, const spvm_string name, spvm_ext_opcode_func* ext);
 void spvm_state_call_function(spvm_state_t state);
 void spvm_state_prepare(spvm_state_t state, spvm_result_t code);
 void spvm_state_copy_uniforms(spvm_state_t dst, spvm_state_t src);
@@ -65,8 +66,9 @@ void spvm_state_step_opcode(spvm_state_t state);
 void spvm_state_step_into(spvm_state_t state);
 void spvm_state_jump_to(spvm_state_t state, spvm_word line);
 void spvm_state_jump_to_instruction(spvm_state_t state, spvm_word instruction_count);
-spvm_result_t spvm_state_get_builtin(spvm_state_t state, SpvBuiltIn decor);
+spvm_member_t spvm_state_get_builtin(spvm_state_t state, SpvBuiltIn decor, spvm_word* mem_count);
 spvm_result_t spvm_state_get_result(spvm_state_t state, const spvm_string str);
+spvm_result_t spvm_state_get_result_with_value(spvm_state_t state, const spvm_string str);
 spvm_result_t spvm_state_get_local_result(spvm_state_t state, spvm_result_t fn, const spvm_string str);
 spvm_member_t spvm_state_get_object_member(spvm_state_t state, spvm_result_t var, const spvm_string member_name);
 void spvm_state_push_function_stack(spvm_state_t state, spvm_result_t func, spvm_word func_res_id);

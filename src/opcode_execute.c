@@ -33,7 +33,7 @@ void spvm_execute_OpExtInst(spvm_word word_count, spvm_state_t state)
 	spvm_word set = SPVM_READ_WORD(state->code_current);
 	spvm_word inst = SPVM_READ_WORD(state->code_current);
 
-	if (state->results[set].extension[inst])
+	if (state->results[set].extension && state->results[set].extension[inst])
 		state->results[set].extension[inst](type, id, word_count - 4, state);
 }
 
@@ -85,13 +85,13 @@ void spvm_execute_OpAccessChain(spvm_word word_count, spvm_state_t state)
 	spvm_word index_id = SPVM_READ_WORD(state->code_current);
 	spvm_word index = state->results[index_id].members[0].value.s;
 
-	spvm_member_t result = state->results[value_id].members + index;
+	spvm_member_t result = state->results[value_id].members + MIN(index, state->results[value_id].member_count - 1);
 
 	while (index_count) {
 		index_id = SPVM_READ_WORD(state->code_current);
 		index = state->results[index_id].members[0].value.s;
 
-		result = result->members + index;
+		result = result->members + MIN(index, result->member_count - 1);
 
 		index_count--;
 	}
@@ -202,6 +202,55 @@ void spvm_image_operands_parse(spvm_image_operands* info, spvm_word bits, spvm_s
 	if (bits & SpvImageOperandsMinLodMask)
 		info->min_lod = state->results[SPVM_READ_WORD(state->code_current)].members[0].value.f;
 }
+
+void process_cubemap_normal(float* nrml)
+{
+	/* https://github.com/zauonlok/renderer/blob/a6b50f06e85659edbc8ee18c674e6f781aacfd84/renderer/core/texture.c#L210 */
+	float absX = (float)fabs(nrml[0]);
+	float absY = (float)fabs(nrml[1]);
+	float absZ = (float)fabs(nrml[2]);
+	float ma, u, v;
+
+	if (absX > absY && absX > absZ) {
+		ma = absX;
+		if (nrml[0] > 0) {
+			nrml[0] = -nrml[2];
+			nrml[1] = -nrml[1];
+			nrml[2] = 0.0f;
+		} else {
+			nrml[0] = +nrml[2];
+			nrml[1] = -nrml[1];
+			nrml[2] = 1.0f;
+		}
+	} else if (absY > absZ) {
+		ma = absY;
+		if (nrml[1] > 0) {
+			nrml[0] = +nrml[0];
+			nrml[1] = +nrml[2];
+			nrml[2] = 2.0f;
+		} else {
+			nrml[0] = +nrml[0];
+			nrml[1] = -nrml[2];
+			nrml[2] = 3.0f;
+		}
+	} else {
+		ma = absZ;
+		if (nrml[2] > 0) {
+			nrml[0] = +nrml[0];
+			nrml[1] = -nrml[1];
+			nrml[2] = 4.0f;
+		} else {
+			nrml[0] = -nrml[0];
+			nrml[1] = -nrml[1];
+			nrml[2] = 5.0f;
+		}
+	}
+
+	nrml[0] = (nrml[0] / ma + 1) / 2;
+	nrml[1] = (nrml[1] / ma + 1) / 2;
+	nrml[2] /= 5.0f;
+}
+
 void spvm_execute_OpImageSampleImplicitLod(spvm_word word_count, spvm_state_t state)
 {
 	spvm_word res_type = SPVM_READ_WORD(state->code_current);
@@ -226,15 +275,28 @@ void spvm_execute_OpImageSampleImplicitLod(spvm_word word_count, spvm_state_t st
 	for (spvm_word i = 0; i < coord->member_count; i++)
 		stu[i] = coord->members[i].value.f;
 
-	stu[0] += operands.offsets[0][0] / (float)image->width;
-	stu[1] += operands.offsets[0][1] / (float)image->height;
-	stu[2] += operands.offsets[0][2] / (float)image->depth;
+	float* px = NULL;
+
+	if (image) {
+		stu[0] += operands.offsets[0][0] / (float)image->width;
+		stu[1] += operands.offsets[0][1] / (float)image->height;
+		stu[2] += operands.offsets[0][2] / (float)image->depth;
+
+		spvm_result_t image_type = spvm_state_get_type_info(state->results, &state->results[image_container->pointer]);
+		
+		if (image_type != NULL) {
+			if (image_type->image_info == NULL)
+				image_type = &state->results[image_type->pointer];
+			
+			if (image_type->image_info != NULL && image_type->image_info->dim == SpvDimCube)
+				process_cubemap_normal(&stu[0]);
+		}
+		px = spvm_image_sample(image, stu[0], stu[1], stu[2]);
+	}
 
 	// todo: spvm_state_ddx/y(coord_id) ?
 
-	float* px = spvm_image_sample(image, stu[0], stu[1], stu[2]);
-
-	for (spvm_word i = 0; i < state->results[id].member_count; i++)
+	for (spvm_word i = 0; i < state->results[id].member_count && px; i++)
 		state->results[id].members[i].value.f = *(px + i);
 }
 void spvm_execute_OpSampledImage(spvm_word word_count, spvm_state_t state)
@@ -547,7 +609,13 @@ void spvm_execute_OpCompositeExtract(spvm_word word_count, spvm_state_t state)
 		index_count--;
 	}
 
-	spvm_member_memcpy(state->results[id].members, result, 1);
+	spvm_word memcount = 1;
+	if (result->member_count) {
+		memcount = result->member_count;
+		result = result->members;
+	}
+
+	spvm_member_memcpy(state->results[id].members, result, memcount);
 }
 void spvm_execute_OpCopyObject(spvm_word word_count, spvm_state_t state)
 {
@@ -744,11 +812,25 @@ void spvm_execute_OpFMod(spvm_word word_count, spvm_state_t state)
 
 	// TODO: is there a better way to do this?
 	if (type_info->value_bitcount > 32)
-		for (spvm_word i = 0; i < state->results[id].member_count; i++)
-			state->results[id].members[i].value.d = fmod(state->results[op1].members[i].value.d, state->results[op2].members[i].value.d);
+		for (spvm_word i = 0; i < state->results[id].member_count; i++) {
+			double op2_sign = SIGN(state->results[op2].members[i].value.d);
+			double op1_sign = SIGN(state->results[op1].members[i].value.d);
+			double sign = 1.0;
+			if (op2_sign != op1_sign)
+				sign = -1.0;
+
+			state->results[id].members[i].value.d = sign * fmod(state->results[op1].members[i].value.d, state->results[op2].members[i].value.d);
+		}
 	else
-		for (spvm_word i = 0; i < state->results[id].member_count; i++)
-			state->results[id].members[i].value.f = fmodf(state->results[op1].members[i].value.f, state->results[op2].members[i].value.f);
+		for (spvm_word i = 0; i < state->results[id].member_count; i++) {
+			float op2_sign = SIGN(state->results[op2].members[i].value.f);
+			float op1_sign = SIGN(state->results[op1].members[i].value.f);
+			float sign = 1.0;
+			if (op2_sign != op1_sign)
+				sign = -1.0;
+
+			state->results[id].members[i].value.f = sign * fmodf(state->results[op1].members[i].value.f, state->results[op2].members[i].value.f);
+		}
 }
 void spvm_execute_OpVectorTimesScalar(spvm_word word_count, spvm_state_t state)
 {
@@ -924,6 +1006,36 @@ void spvm_execute_OpDot(spvm_word word_count, spvm_state_t state)
 }
 
 /* 3.32.14 Bit Instructions */
+void spvm_execute_OpShiftRightLogical(spvm_word word_count, spvm_state_t state)
+{
+	SPVM_SKIP_WORD(state->code_current);
+	spvm_word id = SPVM_READ_WORD(state->code_current);
+	spvm_word base = SPVM_READ_WORD(state->code_current);
+	spvm_word shift = SPVM_READ_WORD(state->code_current);
+
+	for (spvm_word i = 0; i < state->results[id].member_count; i++)
+		state->results[id].members[i].value.u64 = state->results[base].members[i].value.u64 >> state->results[shift].members[i].value.u64;
+}
+void spvm_execute_OpShiftRightArithmetic(spvm_word word_count, spvm_state_t state)
+{
+	SPVM_SKIP_WORD(state->code_current);
+	spvm_word id = SPVM_READ_WORD(state->code_current);
+	spvm_word base = SPVM_READ_WORD(state->code_current);
+	spvm_word shift = SPVM_READ_WORD(state->code_current);
+
+	for (spvm_word i = 0; i < state->results[id].member_count; i++)
+		state->results[id].members[i].value.s = state->results[base].members[i].value.s >> state->results[shift].members[i].value.s;
+}
+void spvm_execute_OpShiftLeftLogical(spvm_word word_count, spvm_state_t state)
+{
+	SPVM_SKIP_WORD(state->code_current);
+	spvm_word id = SPVM_READ_WORD(state->code_current);
+	spvm_word base = SPVM_READ_WORD(state->code_current);
+	spvm_word shift = SPVM_READ_WORD(state->code_current);
+
+	for (spvm_word i = 0; i < state->results[id].member_count; i++)
+		state->results[id].members[i].value.u64 = state->results[base].members[i].value.u64 << state->results[shift].members[i].value.u64;
+}
 void spvm_execute_OpBitwiseOr(spvm_word word_count, spvm_state_t state)
 {
 	SPVM_SKIP_WORD(state->code_current);
@@ -1068,9 +1180,9 @@ void spvm_execute_OpSelect(spvm_word word_count, spvm_state_t state)
 		spvm_byte condValue = state->results[cond].members[0].value.b;
 		spvm_word obj = condValue ? obj1 : obj2;
 		if (state->results[id].members[i].member_count == 0)
-			state->results[id].members[i].value.s = state->results[obj].members[0].value.s;
+			state->results[id].members[i].value.u64 = state->results[obj].members[i].value.u64;
 		else
-			spvm_member_memcpy(&state->results[id].members[i].members[0], &state->results[obj].members[0], state->results[obj].member_count);
+			spvm_member_memcpy(&state->results[id].members[i].members[0], &state->results[obj].members[i].members[0], state->results[obj].members[i].member_count);
 	}
 }
 void spvm_execute_OpIEqual(spvm_word word_count, spvm_state_t state)
@@ -1482,6 +1594,7 @@ void _spvm_context_create_execute_table(spvm_context_t ctx)
 	ctx->opcode_execute[SpvOpUConvert] = spvm_execute_OpUConvert;
 	ctx->opcode_execute[SpvOpSConvert] = spvm_execute_OpSConvert;
 	ctx->opcode_execute[SpvOpFConvert] = spvm_execute_OpFConvert;
+	ctx->opcode_execute[SpvOpQuantizeToF16] = NULL;
 	ctx->opcode_execute[SpvOpBitcast] = spvm_execute_OpBitcast;
 
 	ctx->opcode_execute[SpvOpVectorExtractDynamic] = spvm_execute_OpVectorExtractDynamic;
@@ -1489,8 +1602,10 @@ void _spvm_context_create_execute_table(spvm_context_t ctx)
 	ctx->opcode_execute[SpvOpVectorShuffle] = spvm_execute_OpVectorShuffle;
 	ctx->opcode_execute[SpvOpCompositeConstruct] = spvm_execute_OpCompositeConstruct;
 	ctx->opcode_execute[SpvOpCompositeExtract] = spvm_execute_OpCompositeExtract;
+	ctx->opcode_execute[SpvOpCompositeInsert] = NULL;
 	ctx->opcode_execute[SpvOpCopyObject] = spvm_execute_OpCopyObject;
 	ctx->opcode_execute[SpvOpTranspose] = spvm_execute_OpTranspose;
+	ctx->opcode_execute[SpvOpCopyLogical] = NULL;
 
 	ctx->opcode_execute[SpvOpSNegate] = spvm_execute_OpSNegate;
 	ctx->opcode_execute[SpvOpFNegate] = spvm_execute_OpFNegate;
@@ -1504,7 +1619,9 @@ void _spvm_context_create_execute_table(spvm_context_t ctx)
 	ctx->opcode_execute[SpvOpSDiv] = spvm_execute_OpSDiv;
 	ctx->opcode_execute[SpvOpFDiv] = spvm_execute_OpFDiv;
 	ctx->opcode_execute[SpvOpUMod] = spvm_execute_OpUMod;
+	ctx->opcode_execute[SpvOpSRem] = NULL;
 	ctx->opcode_execute[SpvOpSMod] = spvm_execute_OpSMod;
+	ctx->opcode_execute[SpvOpFRem] = NULL;
 	ctx->opcode_execute[SpvOpFMod] = spvm_execute_OpFMod;
 	ctx->opcode_execute[SpvOpVectorTimesScalar] = spvm_execute_OpVectorTimesScalar;
 	ctx->opcode_execute[SpvOpMatrixTimesScalar] = spvm_execute_OpMatrixTimesScalar;
@@ -1513,12 +1630,24 @@ void _spvm_context_create_execute_table(spvm_context_t ctx)
 	ctx->opcode_execute[SpvOpMatrixTimesMatrix] = spvm_execute_OpMatrixTimesMatrix;
 	ctx->opcode_execute[SpvOpOuterProduct] = spvm_execute_OpOuterProduct;
 	ctx->opcode_execute[SpvOpDot] = spvm_execute_OpDot;
+	ctx->opcode_execute[SpvOpIAddCarry] = NULL;
+	ctx->opcode_execute[SpvOpISubBorrow] = NULL;
+	ctx->opcode_execute[SpvOpUMulExtended] = NULL;
+	ctx->opcode_execute[SpvOpSMulExtended] = NULL;
 
+	ctx->opcode_execute[SpvOpShiftRightLogical] = spvm_execute_OpShiftRightLogical;
+	ctx->opcode_execute[SpvOpShiftRightArithmetic] = spvm_execute_OpShiftRightArithmetic;
+	ctx->opcode_execute[SpvOpShiftLeftLogical] = spvm_execute_OpShiftLeftLogical;
 	ctx->opcode_execute[SpvOpBitwiseOr] = spvm_execute_OpBitwiseOr;
 	ctx->opcode_execute[SpvOpBitwiseAnd] = spvm_execute_OpBitwiseAnd;
 	ctx->opcode_execute[SpvOpBitwiseXor] = spvm_execute_OpBitwiseXor;
 	ctx->opcode_execute[SpvOpNot] = spvm_execute_OpNot;
-
+	ctx->opcode_execute[SpvOpBitFieldInsert] = NULL;
+	ctx->opcode_execute[SpvOpBitFieldSExtract] = NULL;
+	ctx->opcode_execute[SpvOpBitFieldUExtract] = NULL;
+	ctx->opcode_execute[SpvOpBitReverse] = NULL;
+	ctx->opcode_execute[SpvOpBitCount] = NULL;
+	
 	ctx->opcode_execute[SpvOpAny] = spvm_execute_OpAny;
 	ctx->opcode_execute[SpvOpAll] = spvm_execute_OpAll;
 	ctx->opcode_execute[SpvOpIsNan] = spvm_execute_OpIsNan;
@@ -1545,6 +1674,12 @@ void _spvm_context_create_execute_table(spvm_context_t ctx)
 	ctx->opcode_execute[SpvOpFOrdGreaterThan] = spvm_execute_OpFOrdGreaterThan;
 	ctx->opcode_execute[SpvOpFOrdLessThanEqual] = spvm_execute_OpFOrdLessThanEqual;
 	ctx->opcode_execute[SpvOpFOrdGreaterThanEqual] = spvm_execute_OpFOrdGreaterThanEqual;
+	ctx->opcode_execute[SpvOpFUnordEqual] = NULL;
+	ctx->opcode_execute[SpvOpFUnordNotEqual] = NULL;
+	ctx->opcode_execute[SpvOpFUnordLessThan] = NULL;
+	ctx->opcode_execute[SpvOpFUnordGreaterThan] = NULL;
+	ctx->opcode_execute[SpvOpFUnordLessThanEqual] = NULL;
+	ctx->opcode_execute[SpvOpFUnordGreaterThanEqual] = NULL;
 
 	ctx->opcode_execute[SpvOpSampledImage] = spvm_execute_OpSampledImage;
 	ctx->opcode_execute[SpvOpImageSampleImplicitLod] = spvm_execute_OpImageSampleImplicitLod;

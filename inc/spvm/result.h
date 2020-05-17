@@ -78,4 +78,10 @@ void spvm_result_add_member_decoration(spvm_result_t result, SpvDecoration decor
 void spvm_result_allocate_value(spvm_result_t val, spvm_word count);
 void spvm_result_allocate_typed_value(spvm_result_t val, spvm_result* results, spvm_word type);
 
+void spvm_member_allocate_value(spvm_member_t val, spvm_word count);
+void spvm_member_allocate_typed_value(spvm_member_t val, spvm_result* results, spvm_word type);
+spvm_word spvm_result_calculate_size(spvm_result_t results, spvm_word type);
+void spvm_member_recursive_fill(spvm_result_t results, float* data, spvm_member_t values, spvm_word value_count, spvm_word element_type, spvm_word* offset); // offset is number of 4byte elements
+
+
 #endif // __SPIRV_VM_RESULT_H__

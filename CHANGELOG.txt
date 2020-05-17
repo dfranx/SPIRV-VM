@@ -1,3 +1,17 @@
+[v1.2]
++ implement: OpTypeRuntimeArray, OpShiftRightLogical, OpShiftRightArithmetic & OpShiftLeftLogical
++ add spvm_image::user_data
++ add spvm_state_set_extension(state, "name", ext)
++ add spvm_state_get_result_with_value
++ add spvm_result_calculate_size
++ add spvm_member_recursive_fill
++ fix GLSL450: Reflect, Refract, etc...
++ fix OpCompositeExtract
++ fix smoothstep
++ fix spvm_state_get_result
++ fix spvm_state_get_builtin
++ fix OpExtInst
+
 [v1.1]
 + add derivative instructions
 + add primitive instructions (for geometry shaders)

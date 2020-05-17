@@ -31,7 +31,6 @@ OpExecutionModeId
 [3.32.6 Type-Declaration Instructions]
 ---------------------------------------------------------
 OpTypeSampler
-OpTypeRuntimeArray
 OpTypeOpaque
 OpTypeEvent
 OpTypeDeviceEvent
@@ -126,9 +125,6 @@ OpSMulExtended
 
 [3.32.14 Bit Instructions]
 ---------------------------------------------------------
-OpShiftRightLogical
-OpShiftRightArithmetic
-OpShiftLeftLogical
 OpBitFieldInsert
 OpBitFieldSExtract
 OpBitFieldUExtract

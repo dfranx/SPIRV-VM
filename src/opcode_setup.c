@@ -199,6 +199,14 @@ void spvm_setup_OpTypeArray(spvm_word word_count, spvm_state_t state)
 	state->results[store_id].pointer = SPVM_READ_WORD(state->code_current);
 	state->results[store_id].member_count = state->results[SPVM_READ_WORD(state->code_current)].members[0].value.s;
 }
+void spvm_setup_OpTypeRuntimeArray(spvm_word word_count, spvm_state_t state)
+{
+	spvm_word store_id = SPVM_READ_WORD(state->code_current);
+	state->results[store_id].type = spvm_result_type_type;
+	state->results[store_id].value_type = spvm_value_type_runtime_array;
+
+	state->results[store_id].pointer = SPVM_READ_WORD(state->code_current);
+}
 void spvm_setup_OpTypeStruct(spvm_word word_count, spvm_state_t state)
 {
 	spvm_word id = SPVM_READ_WORD(state->code_current);
@@ -429,6 +437,7 @@ void _spvm_context_create_setup_table(spvm_context_t ctx)
 	ctx->opcode_setup[SpvOpTypeImage] = spvm_setup_OpTypeImage;
 	ctx->opcode_setup[SpvOpTypeSampledImage] = spvm_setup_OpTypeSampledImage;
 	ctx->opcode_setup[SpvOpTypeArray] = spvm_setup_OpTypeArray;
+	ctx->opcode_setup[SpvOpTypeRuntimeArray] = spvm_setup_OpTypeRuntimeArray;
 	ctx->opcode_setup[SpvOpTypeStruct] = spvm_setup_OpTypeStruct;
 	ctx->opcode_setup[SpvOpTypePointer] = spvm_setup_OpTypePointer;
 	ctx->opcode_setup[SpvOpTypeFunction] = spvm_setup_OpTypeFunction;
@@ -455,6 +464,7 @@ void _spvm_context_create_setup_table(spvm_context_t ctx)
 	ctx->opcode_setup[SpvOpUConvert] = spvm_setup_constant;
 	ctx->opcode_setup[SpvOpSConvert] = spvm_setup_constant;
 	ctx->opcode_setup[SpvOpFConvert] = spvm_setup_constant;
+	ctx->opcode_setup[SpvOpQuantizeToF16] = spvm_setup_constant;
 	ctx->opcode_setup[SpvOpBitcast] = spvm_setup_constant;
 
 	ctx->opcode_setup[SpvOpVectorExtractDynamic] = spvm_setup_constant;
@@ -462,8 +472,10 @@ void _spvm_context_create_setup_table(spvm_context_t ctx)
 	ctx->opcode_setup[SpvOpVectorShuffle] = spvm_setup_constant;
 	ctx->opcode_setup[SpvOpCompositeConstruct] = spvm_setup_constant;
 	ctx->opcode_setup[SpvOpCompositeExtract] = spvm_setup_constant;
+	ctx->opcode_setup[SpvOpCompositeInsert] = spvm_setup_constant;
 	ctx->opcode_setup[SpvOpCopyObject] = spvm_setup_constant;
 	ctx->opcode_setup[SpvOpTranspose] = spvm_setup_constant;
+	ctx->opcode_setup[SpvOpCopyLogical] = spvm_setup_constant;
 
 	ctx->opcode_setup[SpvOpSNegate] = spvm_setup_constant;
 	ctx->opcode_setup[SpvOpFNegate] = spvm_setup_constant;
@@ -477,7 +489,9 @@ void _spvm_context_create_setup_table(spvm_context_t ctx)
 	ctx->opcode_setup[SpvOpSDiv] = spvm_setup_constant;
 	ctx->opcode_setup[SpvOpFDiv] = spvm_setup_constant;
 	ctx->opcode_setup[SpvOpUMod] = spvm_setup_constant;
+	ctx->opcode_setup[SpvOpSRem] = spvm_setup_constant;
 	ctx->opcode_setup[SpvOpSMod] = spvm_setup_constant;
+	ctx->opcode_setup[SpvOpFRem] = spvm_setup_constant;
 	ctx->opcode_setup[SpvOpFMod] = spvm_setup_constant;
 	ctx->opcode_setup[SpvOpVectorTimesScalar] = spvm_setup_constant;
 	ctx->opcode_setup[SpvOpMatrixTimesScalar] = spvm_setup_constant;
@@ -486,11 +500,23 @@ void _spvm_context_create_setup_table(spvm_context_t ctx)
 	ctx->opcode_setup[SpvOpMatrixTimesMatrix] = spvm_setup_constant;
 	ctx->opcode_setup[SpvOpOuterProduct] = spvm_setup_constant;
 	ctx->opcode_setup[SpvOpDot] = spvm_setup_constant;
+	ctx->opcode_setup[SpvOpIAddCarry] = spvm_setup_constant;
+	ctx->opcode_setup[SpvOpISubBorrow] = spvm_setup_constant;
+	ctx->opcode_setup[SpvOpUMulExtended] = spvm_setup_constant;
+	ctx->opcode_setup[SpvOpSMulExtended] = spvm_setup_constant;
 
+	ctx->opcode_setup[SpvOpShiftRightLogical] = spvm_setup_constant;
+	ctx->opcode_setup[SpvOpShiftRightArithmetic] = spvm_setup_constant;
+	ctx->opcode_setup[SpvOpShiftLeftLogical] = spvm_setup_constant;
 	ctx->opcode_setup[SpvOpBitwiseOr] = spvm_setup_constant;
 	ctx->opcode_setup[SpvOpBitwiseAnd] = spvm_setup_constant;
 	ctx->opcode_setup[SpvOpBitwiseXor] = spvm_setup_constant;
 	ctx->opcode_setup[SpvOpNot] = spvm_setup_constant;
+	ctx->opcode_setup[SpvOpBitFieldInsert] = spvm_setup_constant;
+	ctx->opcode_setup[SpvOpBitFieldSExtract] = spvm_setup_constant;
+	ctx->opcode_setup[SpvOpBitFieldUExtract] = spvm_setup_constant;
+	ctx->opcode_setup[SpvOpBitReverse] = spvm_setup_constant;
+	ctx->opcode_setup[SpvOpBitCount] = spvm_setup_constant;
 
 	ctx->opcode_setup[SpvOpAny] = spvm_setup_constant;
 	ctx->opcode_setup[SpvOpAll] = spvm_setup_constant;
@@ -518,6 +544,12 @@ void _spvm_context_create_setup_table(spvm_context_t ctx)
 	ctx->opcode_setup[SpvOpFOrdGreaterThan] = spvm_setup_constant;
 	ctx->opcode_setup[SpvOpFOrdLessThanEqual] = spvm_setup_constant;
 	ctx->opcode_setup[SpvOpFOrdGreaterThanEqual] = spvm_setup_constant;
+	ctx->opcode_setup[SpvOpFUnordEqual] = spvm_setup_constant;
+	ctx->opcode_setup[SpvOpFUnordNotEqual] = spvm_setup_constant;
+	ctx->opcode_setup[SpvOpFUnordLessThan] = spvm_setup_constant;
+	ctx->opcode_setup[SpvOpFUnordGreaterThan] = spvm_setup_constant;
+	ctx->opcode_setup[SpvOpFUnordLessThanEqual] = spvm_setup_constant;
+	ctx->opcode_setup[SpvOpFUnordGreaterThanEqual] = spvm_setup_constant;
 
 	ctx->opcode_setup[SpvOpSampledImage] = spvm_setup_constant;
 	ctx->opcode_setup[SpvOpImageSampleImplicitLod] = spvm_setup_constant;

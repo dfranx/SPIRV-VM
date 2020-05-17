@@ -7,6 +7,8 @@ typedef struct spvm_image {
 	int width;
 	int height;
 	int depth;
+
+	void* user_data;
 } spvm_image;
 typedef spvm_image* spvm_image_t;
 

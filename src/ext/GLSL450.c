@@ -90,7 +90,7 @@ void spvm_execute_GLSL450_SSign(spvm_word type, spvm_word id, spvm_word word_cou
 
 	for (spvm_word i = 0; i < state->results[id].member_count; i++) {
 		int s = state->results[x].members[i].value.s;
-		state->results[id].members[i].value.d = (s < 0) ? -1 : (s > 0 ? 1 : 0);
+		state->results[id].members[i].value.s = (s < 0) ? -1 : (s > 0 ? 1 : 0);
 	}
 }
 void spvm_execute_GLSL450_Floor(spvm_word type, spvm_word id, spvm_word word_count, spvm_state_t state)
@@ -151,84 +151,84 @@ void spvm_execute_GLSL450_Sin(spvm_word type, spvm_word id, spvm_word word_count
 	spvm_word x = SPVM_READ_WORD(state->code_current);
 
 	for (spvm_word i = 0; i < state->results[id].member_count; i++)
-		state->results[id].members[i].value.f = sin(state->results[x].members[i].value.f);
+		state->results[id].members[i].value.f = sinf(state->results[x].members[i].value.f);
 }
 void spvm_execute_GLSL450_Cos(spvm_word type, spvm_word id, spvm_word word_count, spvm_state_t state)
 {
 	spvm_word x = SPVM_READ_WORD(state->code_current);
 
 	for (spvm_word i = 0; i < state->results[id].member_count; i++)
-		state->results[id].members[i].value.f = cos(state->results[x].members[i].value.f);
+		state->results[id].members[i].value.f = cosf(state->results[x].members[i].value.f);
 }
 void spvm_execute_GLSL450_Tan(spvm_word type, spvm_word id, spvm_word word_count, spvm_state_t state)
 {
 	spvm_word x = SPVM_READ_WORD(state->code_current);
 
 	for (spvm_word i = 0; i < state->results[id].member_count; i++)
-		state->results[id].members[i].value.f = tan(state->results[x].members[i].value.f);
+		state->results[id].members[i].value.f = tanf(state->results[x].members[i].value.f);
 }
 void spvm_execute_GLSL450_Asin(spvm_word type, spvm_word id, spvm_word word_count, spvm_state_t state)
 {
 	spvm_word x = SPVM_READ_WORD(state->code_current);
 
 	for (spvm_word i = 0; i < state->results[id].member_count; i++)
-		state->results[id].members[i].value.f = asin(state->results[x].members[i].value.f);
+		state->results[id].members[i].value.f = asinf(state->results[x].members[i].value.f);
 }
 void spvm_execute_GLSL450_Acos(spvm_word type, spvm_word id, spvm_word word_count, spvm_state_t state)
 {
 	spvm_word x = SPVM_READ_WORD(state->code_current);
 
 	for (spvm_word i = 0; i < state->results[id].member_count; i++)
-		state->results[id].members[i].value.f = acos(state->results[x].members[i].value.f);
+		state->results[id].members[i].value.f = acosf(state->results[x].members[i].value.f);
 }
 void spvm_execute_GLSL450_Atan(spvm_word type, spvm_word id, spvm_word word_count, spvm_state_t state)
 {
 	spvm_word x = SPVM_READ_WORD(state->code_current);
 
 	for (spvm_word i = 0; i < state->results[id].member_count; i++)
-		state->results[id].members[i].value.f = atan(state->results[x].members[i].value.f);
+		state->results[id].members[i].value.f = atanf(state->results[x].members[i].value.f);
 }
 void spvm_execute_GLSL450_Sinh(spvm_word type, spvm_word id, spvm_word word_count, spvm_state_t state)
 {
 	spvm_word x = SPVM_READ_WORD(state->code_current);
 
 	for (spvm_word i = 0; i < state->results[id].member_count; i++)
-		state->results[id].members[i].value.f = sinh(state->results[x].members[i].value.f);
+		state->results[id].members[i].value.f = sinhf(state->results[x].members[i].value.f);
 }
 void spvm_execute_GLSL450_Cosh(spvm_word type, spvm_word id, spvm_word word_count, spvm_state_t state)
 {
 	spvm_word x = SPVM_READ_WORD(state->code_current);
 
 	for (spvm_word i = 0; i < state->results[id].member_count; i++)
-		state->results[id].members[i].value.f = cosh(state->results[x].members[i].value.f);
+		state->results[id].members[i].value.f = coshf(state->results[x].members[i].value.f);
 }
 void spvm_execute_GLSL450_Tanh(spvm_word type, spvm_word id, spvm_word word_count, spvm_state_t state)
 {
 	spvm_word x = SPVM_READ_WORD(state->code_current);
 
 	for (spvm_word i = 0; i < state->results[id].member_count; i++)
-		state->results[id].members[i].value.f = tanh(state->results[x].members[i].value.f);
+		state->results[id].members[i].value.f = tanhf(state->results[x].members[i].value.f);
 }
 void spvm_execute_GLSL450_Asinh(spvm_word type, spvm_word id, spvm_word word_count, spvm_state_t state)
 {
 	spvm_word x = SPVM_READ_WORD(state->code_current);
 
 	for (spvm_word i = 0; i < state->results[id].member_count; i++)
-		state->results[id].members[i].value.f = asinh(state->results[x].members[i].value.f);
+		state->results[id].members[i].value.f = asinhf(state->results[x].members[i].value.f);
 }
 void spvm_execute_GLSL450_Acosh(spvm_word type, spvm_word id, spvm_word word_count, spvm_state_t state)
 {
 	spvm_word x = SPVM_READ_WORD(state->code_current);
 
 	for (spvm_word i = 0; i < state->results[id].member_count; i++)
-		state->results[id].members[i].value.f = acosh(state->results[x].members[i].value.f);
+		state->results[id].members[i].value.f = acoshf(state->results[x].members[i].value.f);
 }
 void spvm_execute_GLSL450_Atanh(spvm_word type, spvm_word id, spvm_word word_count, spvm_state_t state)
 {
 	spvm_word x = SPVM_READ_WORD(state->code_current);
 
 	for (spvm_word i = 0; i < state->results[id].member_count; i++)
-		state->results[id].members[i].value.f = atanh(state->results[x].members[i].value.f);
+		state->results[id].members[i].value.f = atanhf(state->results[x].members[i].value.f);
 }
 void spvm_execute_GLSL450_Atan2(spvm_word type, spvm_word id, spvm_word word_count, spvm_state_t state)
 {
@@ -236,7 +236,7 @@ void spvm_execute_GLSL450_Atan2(spvm_word type, spvm_word id, spvm_word word_cou
 	spvm_word x = SPVM_READ_WORD(state->code_current);
 
 	for (spvm_word i = 0; i < state->results[id].member_count; i++)
-		state->results[id].members[i].value.f = atan2(state->results[y].members[i].value.f, state->results[x].members[i].value.f);
+		state->results[id].members[i].value.f = atan2f(state->results[y].members[i].value.f, state->results[x].members[i].value.f);
 }
 void spvm_execute_GLSL450_Pow(spvm_word type, spvm_word id, spvm_word word_count, spvm_state_t state)
 {
@@ -244,35 +244,35 @@ void spvm_execute_GLSL450_Pow(spvm_word type, spvm_word id, spvm_word word_count
 	spvm_word y = SPVM_READ_WORD(state->code_current);
 
 	for (spvm_word i = 0; i < state->results[id].member_count; i++)
-		state->results[id].members[i].value.f = pow(state->results[x].members[i].value.f, state->results[y].members[i].value.f);
+		state->results[id].members[i].value.f = powf(state->results[x].members[i].value.f, state->results[y].members[i].value.f);
 }
 void spvm_execute_GLSL450_Exp(spvm_word type, spvm_word id, spvm_word word_count, spvm_state_t state)
 {
 	spvm_word x = SPVM_READ_WORD(state->code_current);
 
 	for (spvm_word i = 0; i < state->results[id].member_count; i++)
-		state->results[id].members[i].value.f = exp(state->results[x].members[i].value.f);
+		state->results[id].members[i].value.f = expf(state->results[x].members[i].value.f);
 }
 void spvm_execute_GLSL450_Log(spvm_word type, spvm_word id, spvm_word word_count, spvm_state_t state)
 {
 	spvm_word x = SPVM_READ_WORD(state->code_current);
 
 	for (spvm_word i = 0; i < state->results[id].member_count; i++)
-		state->results[id].members[i].value.f = log(state->results[x].members[i].value.f);
+		state->results[id].members[i].value.f = logf(state->results[x].members[i].value.f);
 }
 void spvm_execute_GLSL450_Exp2(spvm_word type, spvm_word id, spvm_word word_count, spvm_state_t state)
 {
 	spvm_word x = SPVM_READ_WORD(state->code_current);
 
 	for (spvm_word i = 0; i < state->results[id].member_count; i++)
-		state->results[id].members[i].value.f = exp2(state->results[x].members[i].value.f);
+		state->results[id].members[i].value.f = exp2f(state->results[x].members[i].value.f);
 }
 void spvm_execute_GLSL450_Log2(spvm_word type, spvm_word id, spvm_word word_count, spvm_state_t state)
 {
 	spvm_word x = SPVM_READ_WORD(state->code_current);
 
 	for (spvm_word i = 0; i < state->results[id].member_count; i++)
-		state->results[id].members[i].value.f = log2(state->results[x].members[i].value.f);
+		state->results[id].members[i].value.f = log2f(state->results[x].members[i].value.f);
 }
 void spvm_execute_GLSL450_Sqrt(spvm_word type, spvm_word id, spvm_word word_count, spvm_state_t state)
 {
@@ -601,19 +601,25 @@ void spvm_execute_GLSL450_SmoothStep(spvm_word type, spvm_word id, spvm_word wor
 			double edge0Val = state->results[edge0].members[i].value.d;
 			double edge1Val = state->results[edge1].members[i].value.d;
 
-			xVal = CLAMP((xVal - edge0Val) / (edge1Val - edge0Val), 0.0, 1.0);
-
-			state->results[id].members[i].value.d = xVal * xVal * (3.0 - 2.0 * xVal);
+			if (edge0Val == edge1Val) {
+				state->results[id].members[i].value.d = 0.0;
+			} else {
+				xVal = CLAMP((xVal - edge0Val) / (edge1Val - edge0Val), 0.0, 1.0);
+				state->results[id].members[i].value.d = xVal * xVal * (3.0 - 2.0 * xVal);
+			}
 		}
 	else
 		for (spvm_word i = 0; i < state->results[id].member_count; i++) {
 			float xVal = state->results[x].members[i].value.f;
 			float edge0Val = state->results[edge0].members[i].value.f;
 			float edge1Val = state->results[edge1].members[i].value.f;
-			
-			xVal = CLAMP((xVal - edge0Val) / (edge1Val - edge0Val), 0.0f, 1.0f);
 
-			state->results[id].members[i].value.f = xVal * xVal * (3.0f - 2.0f * xVal);
+			if (edge0Val == edge1Val) {
+				state->results[id].members[i].value.f = 0.0f;
+			} else {
+				xVal = CLAMP((xVal - edge0Val) / (edge1Val - edge0Val), 0.0f, 1.0f);
+				state->results[id].members[i].value.f = xVal * xVal * (3.0f - 2.0f * xVal);
+			}
 		}
 }
 void spvm_execute_GLSL450_Fma(spvm_word type, spvm_word id, spvm_word word_count, spvm_state_t state)
@@ -902,7 +908,7 @@ void spvm_execute_GLSL450_Length(spvm_word type, spvm_word id, spvm_word word_co
 
 	if (type_info->value_bitcount > 32) {
 		double sum = 0.0;
-		for (spvm_word i = 0; i < state->results[id].member_count; i++)
+		for (spvm_word i = 0; i < state->results[x].member_count; i++)
 			sum += state->results[x].members[i].value.d * state->results[x].members[i].value.d;
 		state->results[id].members[0].value.d = sqrt(sum);
 	} else {
@@ -921,12 +927,12 @@ void spvm_execute_GLSL450_Distance(spvm_word type, spvm_word id, spvm_word word_
 
 	if (type_info->value_bitcount > 32) {
 		double sum = 0.0;
-		for (spvm_word i = 0; i < state->results[id].member_count; i++)
+		for (spvm_word i = 0; i < state->results[p0].member_count; i++)
 			sum += (state->results[p0].members[i].value.d - state->results[p1].members[i].value.d) * (state->results[p0].members[i].value.d - state->results[p1].members[i].value.d);
 		state->results[id].members[0].value.d = sqrt(sum);
 	} else {
 		float sum = 0.0f;
-		for (spvm_word i = 0; i < state->results[id].member_count; i++)
+		for (spvm_word i = 0; i < state->results[p0].member_count; i++)
 			sum += (state->results[p0].members[i].value.f - state->results[p1].members[i].value.f) * (state->results[p0].members[i].value.f - state->results[p1].members[i].value.f);
 		state->results[id].members[0].value.f = sqrtf(sum);
 	}
@@ -961,7 +967,7 @@ void spvm_execute_GLSL450_Normalize(spvm_word type, spvm_word id, spvm_word word
 
 	if (type_info->value_bitcount > 32) {
 		double sum = 0.0;
-		for (spvm_word i = 0; i < state->results[id].member_count; i++)
+		for (spvm_word i = 0; i < state->results[x].member_count; i++)
 			sum += state->results[x].members[i].value.d * state->results[x].members[i].value.d;
 		sum = sqrt(sum);
 		for (spvm_word i = 0; i < state->results[id].member_count; i++)
@@ -969,7 +975,7 @@ void spvm_execute_GLSL450_Normalize(spvm_word type, spvm_word id, spvm_word word
 	}
 	else {
 		float sum = 0.0;
-		for (spvm_word i = 0; i < state->results[id].member_count; i++)
+		for (spvm_word i = 0; i < state->results[x].member_count; i++)
 			sum += state->results[x].members[i].value.f * state->results[x].members[i].value.f;
 		sum = sqrtf(sum);
 		for (spvm_word i = 0; i < state->results[id].member_count; i++)
@@ -986,7 +992,7 @@ void spvm_execute_GLSL450_FaceForward(spvm_word type, spvm_word id, spvm_word wo
 
 	if (type_info->value_bitcount > 32) {
 		double dot = 0.0;
-		for (spvm_word i = 0; i < state->results[id].member_count; i++)
+		for (spvm_word i = 0; i < state->results[Nref].member_count; i++)
 			dot += state->results[Nref].members[i].value.d * state->results[I].members[i].value.d;
 		dot = (dot < 0.0) ? 1.0 : -1.0;
 		for (spvm_word i = 0; i < state->results[id].member_count; i++)
@@ -994,7 +1000,7 @@ void spvm_execute_GLSL450_FaceForward(spvm_word type, spvm_word id, spvm_word wo
 	}
 	else {
 		float dot = 0.0;
-		for (spvm_word i = 0; i < state->results[id].member_count; i++)
+		for (spvm_word i = 0; i < state->results[Nref].member_count; i++)
 			dot += state->results[Nref].members[i].value.f * state->results[I].members[i].value.f;
 		dot = (dot < 0.0f) ? 1.0f : -1.0f;
 		for (spvm_word i = 0; i < state->results[id].member_count; i++)
@@ -1003,21 +1009,21 @@ void spvm_execute_GLSL450_FaceForward(spvm_word type, spvm_word id, spvm_word wo
 }
 void spvm_execute_GLSL450_Reflect(spvm_word type, spvm_word id, spvm_word word_count, spvm_state_t state)
 {
-	spvm_word N = SPVM_READ_WORD(state->code_current);
 	spvm_word I = SPVM_READ_WORD(state->code_current);
+	spvm_word N = SPVM_READ_WORD(state->code_current);
 
 	spvm_result_t type_info = spvm_state_get_type_info(state->results, &state->results[type]);
 
 	if (type_info->value_bitcount > 32) {
 		double dotNI = 0.0;
-		for (spvm_word i = 0; i < state->results[id].member_count; i++)
+		for (spvm_word i = 0; i < state->results[N].member_count; i++)
 			dotNI += state->results[N].members[i].value.d * state->results[I].members[i].value.d;
 		for (spvm_word i = 0; i < state->results[id].member_count; i++)
 			state->results[id].members[i].value.d = state->results[I].members[i].value.d - 2 * dotNI * state->results[N].members[i].value.d;
 	}
 	else {
 		float dotNI = 0.0;
-		for (spvm_word i = 0; i < state->results[id].member_count; i++)
+		for (spvm_word i = 0; i < state->results[N].member_count; i++)
 			dotNI += state->results[N].members[i].value.f * state->results[I].members[i].value.f;
 		for (spvm_word i = 0; i < state->results[id].member_count; i++)
 			state->results[id].members[i].value.f = state->results[I].members[i].value.f - 2 * dotNI * state->results[N].members[i].value.f;
@@ -1034,7 +1040,7 @@ void spvm_execute_GLSL450_Refract(spvm_word type, spvm_word id, spvm_word word_c
 		double eta = state->results[SPVM_READ_WORD(state->code_current)].members[0].value.d;
 
 		double dotNI = 0.0;
-		for (spvm_word i = 0; i < state->results[id].member_count; i++)
+		for (spvm_word i = 0; i < state->results[N].member_count; i++)
 			dotNI += state->results[N].members[i].value.d * state->results[I].members[i].value.d;
 
 		double k = 1.0 - eta * eta * (1.0 - dotNI * dotNI);
@@ -1050,7 +1056,7 @@ void spvm_execute_GLSL450_Refract(spvm_word type, spvm_word id, spvm_word word_c
 		float eta = state->results[SPVM_READ_WORD(state->code_current)].members[0].value.f;
 
 		float dotNI = 0.0f;
-		for (spvm_word i = 0; i < state->results[id].member_count; i++)
+		for (spvm_word i = 0; i < state->results[N].member_count; i++)
 			dotNI += state->results[N].members[i].value.f * state->results[I].members[i].value.f;
 
 		float k = 1.0f - eta * eta * (1.0f - dotNI * dotNI);
