@@ -2,7 +2,6 @@
 #include <spvm/state.h>
 #include "GLSL.std.450.h"
 #include <math.h>
-#include <intrin.h>
 
 #ifndef M_PI
 #    define M_PI 3.14159265358979323846
@@ -1071,24 +1070,33 @@ void spvm_execute_GLSL450_Refract(spvm_word type, spvm_word id, spvm_word word_c
 }
 void spvm_execute_GLSL450_FindILsb(spvm_word type, spvm_word id, spvm_word word_count, spvm_state_t state)
 {
+/*
+TODO:
 	spvm_word x = SPVM_READ_WORD(state->code_current);
 
 	for (spvm_word i = 0; i < state->results[id].member_count; i++)
 		_BitScanForward(&state->results[id].members[0].value.u, state->results[x].members[0].value.u);
+*/
 }
 void spvm_execute_GLSL450_FindSMsb(spvm_word type, spvm_word id, spvm_word word_count, spvm_state_t state)
 {
+/*
+TODO:
 	spvm_word x = SPVM_READ_WORD(state->code_current);
 
 	for (spvm_word i = 0; i < state->results[id].member_count; i++)
 		_BitScanReverse(&state->results[id].members[0].value.s, state->results[x].members[0].value.s);
+*/
 }
 void spvm_execute_GLSL450_FindUMsb(spvm_word type, spvm_word id, spvm_word word_count, spvm_state_t state)
 {
+/*
+TODO:
 	spvm_word x = SPVM_READ_WORD(state->code_current);
 
 	for (spvm_word i = 0; i < state->results[id].member_count; i++)
 		_BitScanReverse(&state->results[id].members[0].value.u, state->results[x].members[0].value.u);
+*/
 }
 void spvm_execute_GLSL450_NMin(spvm_word type, spvm_word id, spvm_word word_count, spvm_state_t state)
 {

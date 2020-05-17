@@ -7,3 +7,5 @@ CMakeFiles/
 SPIRVVM
 cmake_install.cmake
 Makefile
+compile.sh
+libSPIRVVM.a

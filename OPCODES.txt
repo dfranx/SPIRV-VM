@@ -210,6 +210,9 @@ OpGroupSMax
 
 GLSL.std.450
 =========================================================
+FindILsb
+FindSMsb
+FindUMsb
 InterpolateAtCentroid
 InterpolateAtSample
 InterpolateAtOffset
