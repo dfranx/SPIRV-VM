@@ -1683,6 +1683,7 @@ void _spvm_context_create_execute_table(spvm_context_t ctx)
 
 	ctx->opcode_execute[SpvOpSampledImage] = spvm_execute_OpSampledImage;
 	ctx->opcode_execute[SpvOpImageSampleImplicitLod] = spvm_execute_OpImageSampleImplicitLod;
+	ctx->opcode_execute[SpvOpImageSampleExplicitLod] = spvm_execute_OpImageSampleImplicitLod;
 	ctx->opcode_execute[SpvOpImageFetch] = spvm_execute_OpImageFetch;
 	ctx->opcode_execute[SpvOpImageGather] = spvm_execute_OpImageGather;
 	ctx->opcode_execute[SpvOpImageQuerySize] = spvm_execute_OpImageQuerySize;
