@@ -4,9 +4,9 @@
 
 spvm_state_t spvm_state_create(spvm_program_t prog)
 {
-	return _spvm_state_create_base(prog, 0);
+	return _spvm_state_create_base(prog, 0, 0);
 }
-spvm_state_t _spvm_state_create_base(spvm_program_t prog, spvm_byte is_derv_member)
+spvm_state_t _spvm_state_create_base(spvm_program_t prog, spvm_word force_derv, spvm_byte is_derv_member)
 {
 	spvm_state_t state = (spvm_state_t)calloc(1, sizeof(spvm_state));
 
@@ -37,10 +37,12 @@ spvm_state_t _spvm_state_create_base(spvm_program_t prog, spvm_byte is_derv_memb
 		i += word_count;
 	}
 
+	state->derivative_used = force_derv;
+
 	if (!is_derv_member && state->derivative_used) {
-		state->derivative_group_x = _spvm_state_create_base(prog, 1);
-		state->derivative_group_y = _spvm_state_create_base(prog, 1);
-		state->derivative_group_d = _spvm_state_create_base(prog, 1);
+		state->derivative_group_x = _spvm_state_create_base(prog, force_derv, 1);
+		state->derivative_group_y = _spvm_state_create_base(prog, force_derv, 1);
+		state->derivative_group_d = _spvm_state_create_base(prog, force_derv, 1);
 
 		// setup pointers
 		// x
@@ -87,10 +89,10 @@ void spvm_state_set_extension(spvm_state_t state, const spvm_string name, spvm_e
 	}
 }
 
-void spvm_state_prepare(spvm_state_t state, spvm_result_t code)
+void spvm_state_prepare(spvm_state_t state, spvm_word fnLocation)
 {
-	state->code_current = code->source_location;
-	state->current_function = code;
+	state->code_current = state->results[fnLocation].source_location;
+	state->current_function = &state->results[fnLocation];
 
 	if (state->function_stack_count == 0) {
 		state->function_stack_count = 10;
@@ -101,17 +103,17 @@ void spvm_state_prepare(spvm_state_t state, spvm_result_t code)
 	}
 
 	state->function_stack_current = 0;
-	state->function_stack[0] = code->source_location;
-	state->function_stack_info[0] = code;
+	state->function_stack[0] = state->code_current;
+	state->function_stack_info[0] = state->current_function;
 	state->function_stack_cfg[0] = 0;
 	state->did_jump = 0;
 	state->discarded = 0;
 	state->instruction_count = 0;
 	
 	if (!state->_derivative_is_group_member) {
-		if (state->derivative_group_x) spvm_state_prepare(state->derivative_group_x, code);
-		if (state->derivative_group_y) spvm_state_prepare(state->derivative_group_y, code);
-		if (state->derivative_group_d) spvm_state_prepare(state->derivative_group_d, code);
+		if (state->derivative_group_x) spvm_state_prepare(state->derivative_group_x, fnLocation);
+		if (state->derivative_group_y) spvm_state_prepare(state->derivative_group_y, fnLocation);
+		if (state->derivative_group_d) spvm_state_prepare(state->derivative_group_d, fnLocation);
 	}
 }
 void spvm_state_set_frag_coord(spvm_state_t state, float x, float y, float z, float w)
@@ -355,6 +357,14 @@ spvm_result_t spvm_state_get_local_result(spvm_state_t state, spvm_result_t fn, 
 				return &state->results[i];
 
 	return NULL;
+}
+spvm_word spvm_state_get_result_location(spvm_state_t state, const spvm_string str)
+{
+	for (spvm_word i = 0; i < state->owner->bound; i++)
+		if (state->results[i].name != NULL && strcmp(state->results[i].name, str) == 0 && state->results[i].owner == NULL)
+			return i;
+
+	return 0;
 }
 spvm_result_t spvm_state_get_result(spvm_state_t state, const spvm_string str)
 {
