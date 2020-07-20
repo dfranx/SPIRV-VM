@@ -6,7 +6,7 @@ spvm_state_t spvm_state_create(spvm_program_t prog)
 {
 	return _spvm_state_create_base(prog, 0, 0);
 }
-spvm_state_t _spvm_state_create_base(spvm_program_t prog, spvm_word force_derv, spvm_byte is_derv_member)
+spvm_state_t _spvm_state_create_base(spvm_program_t prog, spvm_byte force_derv, spvm_byte is_derv_member)
 {
 	spvm_state_t state = (spvm_state_t)calloc(1, sizeof(spvm_state));
 
