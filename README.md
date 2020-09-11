@@ -65,7 +65,7 @@ You can run your shader in two different ways. You can step line by line through
 This can be done with the `spvm_state_step_into` function (which executes only one line).
 Or you can execute whole shader with a single function call:
 ```c
-spvm_result_t fnMain = spvm_state_get_result(state, "main");
+spvm_word fnMain = spvm_state_get_result_location(state, "main");
 spvm_state_prepare(state, fnMain);
 spvm_state_call_function(state);
 ```

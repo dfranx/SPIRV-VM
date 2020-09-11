@@ -58,7 +58,7 @@ int main()
 	spvm_member_set_value_f(uBlock_info->members, uBlock_info->member_count, infoData);
 
 	// call main
-	spvm_source fnMain = spvm_state_get_result(state, "main");
+	spvm_word fnMain = spvm_state_get_result_location(state, "main");
 	spvm_state_prepare(state, fnMain);
 	spvm_state_call_function(state);
 
