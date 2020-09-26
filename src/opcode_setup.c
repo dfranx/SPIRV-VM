@@ -110,6 +110,17 @@ void spvm_setup_OpCapability(spvm_word word_count, spvm_state_t state)
 	SpvCapability cap = SPVM_READ_WORD(state->code_current);
 	spvm_program_add_capability(state->owner, cap);
 }
+void spvm_setup_OpExecutionMode(spvm_word word_count, spvm_state_t state)
+{
+	SPVM_SKIP_WORD(state->code_current);
+	spvm_word execution_mode = SPVM_READ_WORD(state->code_current);
+
+	if (execution_mode == SpvExecutionModeLocalSize) {
+		state->owner->local_size_x = SPVM_READ_WORD(state->code_current);
+		state->owner->local_size_y = SPVM_READ_WORD(state->code_current);
+		state->owner->local_size_z = SPVM_READ_WORD(state->code_current);
+	}
+}
 
 /* 3.32.6 Type-Declaration Instructions */
 void spvm_setup_OpTypeVoid(spvm_word word_count, spvm_state_t state)
@@ -319,6 +330,9 @@ void spvm_setup_OpVariable(spvm_word word_count, spvm_state_t state)
 	state->results[id].owner = state->current_function;
 
 	spvm_result_allocate_typed_value(&state->results[id], state->results, var_type);
+
+	if (state->owner->allocate_workgroup_memory && state->results[id].storage_class == SpvStorageClassWorkgroup)
+		state->owner->allocate_workgroup_memory(state, id, var_type);
 }
 void spvm_setup_OpLoad(spvm_word word_count, spvm_state_t state)
 {
@@ -426,6 +440,7 @@ void _spvm_context_create_setup_table(spvm_context_t ctx)
 
 	ctx->opcode_setup[SpvOpMemoryModel] = spvm_setup_OpMemoryModel;
 	ctx->opcode_setup[SpvOpEntryPoint] = spvm_setup_OpEntryPoint;
+	ctx->opcode_setup[SpvOpExecutionMode] = spvm_setup_OpExecutionMode;
 	ctx->opcode_setup[SpvOpCapability] = spvm_setup_OpCapability;
 
 	ctx->opcode_setup[SpvOpTypeVoid] = spvm_setup_OpTypeVoid;

@@ -60,8 +60,11 @@ typedef struct spvm_result {
 	/* spvm_result_type_function_type / spvm_result_type_type (structure) / spvm_result_type_function */
 	spvm_word* params;
 
-	/* function & label */
+	/* function, label & access chain */
 	spvm_source source_location;
+
+	/* word count when a opcode uses source_location (OpAccessChain) */
+	spvm_word source_word_count;
 
 	/* op type */
 	char value_type;

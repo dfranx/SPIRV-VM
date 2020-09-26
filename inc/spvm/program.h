@@ -46,6 +46,13 @@ typedef struct {
 	spvm_word entry_point_count;
 	spvm_entry_point* entry_points;
 
+	spvm_word local_size_x;
+	spvm_word local_size_y;
+	spvm_word local_size_z;
+
+	void(*allocate_workgroup_memory)(struct spvm_state*, spvm_word, spvm_word);
+	void(*write_workgroup_memory)(struct spvm_state*, spvm_word, spvm_word);
+
 	void* user_data;
 } spvm_program;
 typedef spvm_program* spvm_program_t;

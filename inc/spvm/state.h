@@ -28,6 +28,8 @@ typedef struct spvm_state {
 	void(*emit_vertex)(struct spvm_state*, spvm_word);
 	void(*end_primitive)(struct spvm_state*, spvm_word);
 
+	void(*control_barrier)(struct spvm_state*, spvm_word, spvm_word, spvm_word);
+
 	float frag_coord[4];
 
 	// derivative group

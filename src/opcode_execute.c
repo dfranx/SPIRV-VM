@@ -44,6 +44,9 @@ void spvm_execute_OpStore(spvm_word word_count, spvm_state_t state)
 	spvm_word val_id = SPVM_READ_WORD(state->code_current);
 
 	spvm_member_memcpy(state->results[ptr_id].members, state->results[val_id].members, state->results[ptr_id].member_count);
+
+	if (state->results[ptr_id].storage_class == SpvStorageClassWorkgroup && state->owner->write_workgroup_memory)
+		state->owner->write_workgroup_memory(state, ptr_id, val_id);
 }
 void spvm_execute_OpLoad(spvm_word word_count, spvm_state_t state)
 {
@@ -73,6 +76,8 @@ void spvm_execute_OpCopyMemorySized(spvm_word word_count, spvm_state_t state)
 }
 void spvm_execute_OpAccessChain(spvm_word word_count, spvm_state_t state)
 {
+	spvm_source source_pointer = state->code_current;
+
 	spvm_word var_type = SPVM_READ_WORD(state->code_current);
 	spvm_word id = SPVM_READ_WORD(state->code_current);
 	spvm_word value_id = SPVM_READ_WORD(state->code_current);
@@ -81,6 +86,9 @@ void spvm_execute_OpAccessChain(spvm_word word_count, spvm_state_t state)
 
 	state->results[id].type = spvm_result_type_access_chain;
 	state->results[id].pointer = var_type;
+	state->results[id].storage_class = state->results[value_id].storage_class;
+	state->results[id].source_location = source_pointer;
+	state->results[id].source_word_count = word_count;
 
 	spvm_word index_id = SPVM_READ_WORD(state->code_current);
 	spvm_word index = state->results[index_id].members[0].value.s;
@@ -99,8 +107,7 @@ void spvm_execute_OpAccessChain(spvm_word word_count, spvm_state_t state)
 	if (result->member_count != 0) {
 		state->results[id].member_count = result->member_count;
 		state->results[id].members = result->members;
-	}
-	else {
+	} else {
 		state->results[id].member_count = 1;
 		state->results[id].members = result;
 	}
@@ -410,6 +417,33 @@ void spvm_execute_OpImageQuerySize(spvm_word word_count, spvm_state_t state)
 		state->results[id].members[1].value.s = img->height;
 	if (state->results[id].member_count > 2)
 		state->results[id].members[2].value.s = img->depth;
+}
+void spvm_execute_OpImageWrite(spvm_word word_count, spvm_state_t state)
+{
+	spvm_word image_id = SPVM_READ_WORD(state->code_current);
+	spvm_word coord_id = SPVM_READ_WORD(state->code_current);
+	spvm_word texel_id = SPVM_READ_WORD(state->code_current);
+
+	spvm_image_t img = state->results[image_id].members[0].image_data;
+
+	if (img != NULL) {
+		spvm_result_t coord = &state->results[coord_id];
+		spvm_result_t texel = &state->results[texel_id];
+
+		int x = 0, y = 0, z = 0;
+		
+		x = coord->members[0].value.s;
+		if (coord->member_count > 1)
+			y = coord->members[1].value.s;
+		if (coord->member_count > 2)
+			z = coord->members[2].value.s;
+
+		float rgba[4];
+		for (int i = 0; i < texel->member_count; i++)
+			rgba[i] = texel->members[i].value.f;
+
+		spvm_image_write(img, x, y, z, rgba);
+	}
 }
 
 /* 3.32.11 Conversion Instructions */
@@ -1562,6 +1596,17 @@ void spvm_execute_OpEndStreamPrimitive(spvm_word word_count, spvm_state_t state)
 	}
 }
 
+/* 3.32.20 Barrier Instructions */
+void spvm_execute_OpControlBarrier(spvm_word word_count, spvm_state_t state)
+{
+	if (state->control_barrier) {
+		spvm_word execution = SPVM_READ_WORD(state->code_current);
+		spvm_word memory = SPVM_READ_WORD(state->code_current);
+		spvm_word semantics = SPVM_READ_WORD(state->code_current);
+		state->control_barrier(state, execution, memory, semantics);
+	}
+}
+
 
 void _spvm_context_create_execute_table(spvm_context_t ctx)
 {
@@ -1695,6 +1740,7 @@ void _spvm_context_create_execute_table(spvm_context_t ctx)
 	ctx->opcode_execute[SpvOpImageSampleProjDrefExplicitLod] = NULL;
 	ctx->opcode_execute[SpvOpImageDrefGather] = NULL;
 	ctx->opcode_execute[SpvOpImageRead] = NULL;
+	ctx->opcode_execute[SpvOpImageWrite] = spvm_execute_OpImageWrite;
 	ctx->opcode_execute[SpvOpImageQueryFormat] = NULL;
 	ctx->opcode_execute[SpvOpImageQueryOrder] = NULL;
 	ctx->opcode_execute[SpvOpImageQuerySizeLod] = NULL;
@@ -1734,4 +1780,6 @@ void _spvm_context_create_execute_table(spvm_context_t ctx)
 	ctx->opcode_execute[SpvOpEndPrimitive] = spvm_execute_OpEndPrimitive;
 	ctx->opcode_execute[SpvOpEmitStreamVertex] = spvm_execute_OpEmitStreamVertex;
 	ctx->opcode_execute[SpvOpEndStreamPrimitive] = spvm_execute_OpEndStreamPrimitive;
+
+	ctx->opcode_execute[SpvOpControlBarrier] = spvm_execute_OpControlBarrier;
 }

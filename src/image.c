@@ -21,3 +21,8 @@ float* spvm_image_sample(spvm_image_t img, float s, float t, float u)
 
 	return img->data + (z * img->height * img->width + y * img->width + x) * 4;
 }
+void spvm_image_write(spvm_image_t img, int x, int y, int z, float* rgba)
+{
+	if (x < img->width && y < img->height && z < img->depth)
+		memcpy(img->data + (z * img->height * img->width + y * img->width + x) * 4, rgba, sizeof(float) * 4);
+}
