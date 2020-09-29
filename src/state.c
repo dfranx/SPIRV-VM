@@ -445,32 +445,7 @@ void spvm_state_delete(spvm_state_t state)
 {
 	for (spvm_word i = 0; i < state->owner->bound; i++) {
 		spvm_result_t res = &state->results[i];
-
-		// name
-		if (res->name != NULL)
-			free(res->name);
-
-		// member names
-		for (spvm_word j = 0; j < res->member_name_count; j++)
-			free(res->member_name[j]);
-		if (res->member_name_count)
-			free(res->member_name);
-
-		// member/parameter types
-		if (res->value_type == spvm_value_type_struct || res->type == spvm_result_type_function_type)
-			free(res->params);
-
-		// decorations
-		if (res->decoration_count)
-			free(res->decorations);
-
-		// image info
-		if (res->image_info)
-			free(res->image_info);
-
-		// constants
-		if (res->type == spvm_result_type_constant || res->type == spvm_result_type_variable)
-			spvm_member_free(res->members, res->member_count);
+		spvm_result_delete(res);
 	}
 
 	if (state->function_stack_count) {

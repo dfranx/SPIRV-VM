@@ -113,6 +113,34 @@ void spvm_result_allocate_typed_value(spvm_result_t val, spvm_result* results, s
 				spvm_member_allocate_typed_value(&val->members[i], results, type_info->pointer);
 	}
 }
+void spvm_result_delete(spvm_result_t res)
+{
+	// name
+	if (res->name != NULL)
+		free(res->name);
+
+	// member names
+	for (spvm_word j = 0; j < res->member_name_count; j++)
+		free(res->member_name[j]);
+	if (res->member_name_count)
+		free(res->member_name);
+
+	// member/parameter types
+	if (res->value_type == spvm_value_type_struct || res->type == spvm_result_type_function_type)
+		free(res->params);
+
+	// decorations
+	if (res->decoration_count)
+		free(res->decorations);
+
+	// image info
+	if (res->image_info)
+		free(res->image_info);
+
+	// constants
+	if (res->type == spvm_result_type_constant || res->type == spvm_result_type_variable)
+		spvm_member_free(res->members, res->member_count);
+}
 
 spvm_word spvm_result_calculate_size(spvm_result_t results, spvm_word type)
 {
