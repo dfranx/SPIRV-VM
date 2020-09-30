@@ -418,6 +418,33 @@ void spvm_execute_OpImageQuerySize(spvm_word word_count, spvm_state_t state)
 	if (state->results[id].member_count > 2)
 		state->results[id].members[2].value.s = img->depth;
 }
+void spvm_execute_OpImageRead(spvm_word word_count, spvm_state_t state)
+{
+	spvm_word res_type = SPVM_READ_WORD(state->code_current);
+	spvm_word id = SPVM_READ_WORD(state->code_current);
+	spvm_word image_id = SPVM_READ_WORD(state->code_current);
+	spvm_word coord_id = SPVM_READ_WORD(state->code_current);
+
+	spvm_image_t img = state->results[image_id].members[0].image_data;
+
+	if (img != NULL) {
+		spvm_result_t coord = &state->results[coord_id];
+		spvm_result_t output = &state->results[id];
+
+		int x = 0, y = 0, z = 0;
+
+		x = coord->members[0].value.s;
+		if (coord->member_count > 1)
+			y = coord->members[1].value.s;
+		if (coord->member_count > 2)
+			z = coord->members[2].value.s;
+
+		float* data = spvm_image_read(img, x, y, z);
+
+		for (int i = 0; i < output->member_count; i++)
+			output->members[i].value.f = data[i];
+	}
+}
 void spvm_execute_OpImageWrite(spvm_word word_count, spvm_state_t state)
 {
 	spvm_word image_id = SPVM_READ_WORD(state->code_current);
@@ -1570,6 +1597,83 @@ void spvm_execute_OpKill(spvm_word word_count, spvm_state_t state)
 	state->discarded = 1;
 }
 
+/* 3.32.18 Atomic Instructions */
+void spvm_execute_OpAtomicLoad(spvm_word word_count, spvm_state_t state)
+{
+	if (state->owner->atomic_operation)
+		state->owner->atomic_operation(SpvOpAtomicLoad, word_count, state);
+}
+void spvm_execute_OpAtomicStore(spvm_word word_count, spvm_state_t state)
+{
+	if (state->owner->atomic_operation)
+		state->owner->atomic_operation(SpvOpAtomicStore, word_count, state);
+}
+void spvm_execute_OpAtomicExchange(spvm_word word_count, spvm_state_t state)
+{
+	if (state->owner->atomic_operation)
+		state->owner->atomic_operation(SpvOpAtomicExchange, word_count, state);
+}
+void spvm_execute_OpAtomicCompareExchange(spvm_word word_count, spvm_state_t state)
+{
+	if (state->owner->atomic_operation)
+		state->owner->atomic_operation(SpvOpAtomicCompareExchange, word_count, state);
+}
+void spvm_execute_OpAtomicIIncrement(spvm_word word_count, spvm_state_t state)
+{
+	if (state->owner->atomic_operation)
+		state->owner->atomic_operation(SpvOpAtomicIIncrement, word_count, state);
+}
+void spvm_execute_OpAtomicIDecrement(spvm_word word_count, spvm_state_t state)
+{
+	if (state->owner->atomic_operation)
+		state->owner->atomic_operation(SpvOpAtomicIDecrement, word_count, state);
+}
+void spvm_execute_OpAtomicIAdd(spvm_word word_count, spvm_state_t state)
+{
+	if (state->owner->atomic_operation)
+		state->owner->atomic_operation(SpvOpAtomicIAdd, word_count, state);
+}
+void spvm_execute_OpAtomicISub(spvm_word word_count, spvm_state_t state)
+{
+	if (state->owner->atomic_operation)
+		state->owner->atomic_operation(SpvOpAtomicISub, word_count, state);
+}
+void spvm_execute_OpAtomicSMin(spvm_word word_count, spvm_state_t state)
+{
+	if (state->owner->atomic_operation)
+		state->owner->atomic_operation(SpvOpAtomicSMin, word_count, state);
+}
+void spvm_execute_OpAtomicUMin(spvm_word word_count, spvm_state_t state)
+{
+	if (state->owner->atomic_operation)
+		state->owner->atomic_operation(SpvOpAtomicUMin, word_count, state);
+}
+void spvm_execute_OpAtomicSMax(spvm_word word_count, spvm_state_t state)
+{
+	if (state->owner->atomic_operation)
+		state->owner->atomic_operation(SpvOpAtomicSMax, word_count, state);
+}
+void spvm_execute_OpAtomicUMax(spvm_word word_count, spvm_state_t state)
+{
+	if (state->owner->atomic_operation)
+		state->owner->atomic_operation(SpvOpAtomicUMax, word_count, state);
+}
+void spvm_execute_OpAtomicAnd(spvm_word word_count, spvm_state_t state)
+{
+	if (state->owner->atomic_operation)
+		state->owner->atomic_operation(SpvOpAtomicAnd, word_count, state);
+}
+void spvm_execute_OpAtomicOr(spvm_word word_count, spvm_state_t state)
+{
+	if (state->owner->atomic_operation)
+		state->owner->atomic_operation(SpvOpAtomicOr, word_count, state);
+}
+void spvm_execute_OpAtomicXor(spvm_word word_count, spvm_state_t state)
+{
+	if (state->owner->atomic_operation)
+		state->owner->atomic_operation(SpvOpAtomicXor, word_count, state);
+}
+
 /* 3.32.19 Primitive Instructions */
 void spvm_execute_OpEmitVertex(spvm_word word_count, spvm_state_t state)
 {
@@ -1739,7 +1843,7 @@ void _spvm_context_create_execute_table(spvm_context_t ctx)
 	ctx->opcode_execute[SpvOpImageSampleProjDrefImplicitLod] = NULL;
 	ctx->opcode_execute[SpvOpImageSampleProjDrefExplicitLod] = NULL;
 	ctx->opcode_execute[SpvOpImageDrefGather] = NULL;
-	ctx->opcode_execute[SpvOpImageRead] = NULL;
+	ctx->opcode_execute[SpvOpImageRead] = spvm_execute_OpImageRead;
 	ctx->opcode_execute[SpvOpImageWrite] = spvm_execute_OpImageWrite;
 	ctx->opcode_execute[SpvOpImageQueryFormat] = NULL;
 	ctx->opcode_execute[SpvOpImageQueryOrder] = NULL;
@@ -1780,6 +1884,22 @@ void _spvm_context_create_execute_table(spvm_context_t ctx)
 	ctx->opcode_execute[SpvOpEndPrimitive] = spvm_execute_OpEndPrimitive;
 	ctx->opcode_execute[SpvOpEmitStreamVertex] = spvm_execute_OpEmitStreamVertex;
 	ctx->opcode_execute[SpvOpEndStreamPrimitive] = spvm_execute_OpEndStreamPrimitive;
+
+	ctx->opcode_execute[SpvOpAtomicLoad] = spvm_execute_OpAtomicLoad;
+	ctx->opcode_execute[SpvOpAtomicStore] = spvm_execute_OpAtomicStore;
+	ctx->opcode_execute[SpvOpAtomicExchange] = spvm_execute_OpAtomicExchange;
+	ctx->opcode_execute[SpvOpAtomicCompareExchange] = spvm_execute_OpAtomicCompareExchange;
+	ctx->opcode_execute[SpvOpAtomicIIncrement] = spvm_execute_OpAtomicIIncrement;
+	ctx->opcode_execute[SpvOpAtomicIDecrement] = spvm_execute_OpAtomicIDecrement;
+	ctx->opcode_execute[SpvOpAtomicIAdd] = spvm_execute_OpAtomicIAdd;
+	ctx->opcode_execute[SpvOpAtomicISub] = spvm_execute_OpAtomicISub;
+	ctx->opcode_execute[SpvOpAtomicSMin] = spvm_execute_OpAtomicSMin;
+	ctx->opcode_execute[SpvOpAtomicUMin] = spvm_execute_OpAtomicUMin;
+	ctx->opcode_execute[SpvOpAtomicSMax] = spvm_execute_OpAtomicSMax;
+	ctx->opcode_execute[SpvOpAtomicUMax] = spvm_execute_OpAtomicUMax;
+	ctx->opcode_execute[SpvOpAtomicAnd] = spvm_execute_OpAtomicAnd;
+	ctx->opcode_execute[SpvOpAtomicOr] = spvm_execute_OpAtomicOr;
+	ctx->opcode_execute[SpvOpAtomicXor] = spvm_execute_OpAtomicXor;
 
 	ctx->opcode_execute[SpvOpControlBarrier] = spvm_execute_OpControlBarrier;
 }

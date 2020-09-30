@@ -72,8 +72,6 @@ OpImageSampleProjExplicitLod
 OpImageSampleProjDrefImplicitLod
 OpImageSampleProjDrefExplicitLod
 OpImageDrefGather
-OpImageRead
-OpImageWrite
 OpImage
 OpImageQueryFormat
 OpImageQueryOrder
@@ -159,22 +157,6 @@ OpLifetimeStop
 
 [3.32.18 Atomic Instructions]
 ---------------------------------------------------------
-OpAtomicLoad
-OpAtomicStore
-OpAtomicExchange
-OpAtomicCompareExchange
-OpAtomicCompareExchangeWeak
-OpAtomicIIncrement
-OpAtomicIDecrement
-OpAtomicIAdd
-OpAtomicISub
-OpAtomicSMin
-OpAtomicUMin
-OpAtomicSMax
-OpAtomicUMax
-OpAtomicAnd
-OpAtomicOr
-OpAtomicXor
 OpAtomicFlagTestAndSet
 OpAtomicFlagClear
 
@@ -184,7 +166,6 @@ OpAtomicFlagClear
 
 [3.32.20 Barrier Instructions]
 ---------------------------------------------------------
-OpControlBarrier
 OpMemoryBarrier
 OpNamedBarrierInitialize
 OpMemoryNamedBarrier

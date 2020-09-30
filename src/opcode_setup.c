@@ -422,6 +422,10 @@ void spvm_setup_OpLabel(spvm_word word_count, spvm_state_t state)
 	state->results[id].source_location = state->code_current;
 }
 
+
+/* 3.32.18 Atomic Instructions */
+
+
 void _spvm_context_create_setup_table(spvm_context_t ctx)
 {
 	ctx->opcode_setup = (spvm_opcode_func*)calloc(SPVM_OPCODE_TABLE_LENGTH, sizeof(spvm_opcode_func));
@@ -612,4 +616,19 @@ void _spvm_context_create_setup_table(spvm_context_t ctx)
 
 	ctx->opcode_setup[SpvOpLabel] = spvm_setup_OpLabel;
 	ctx->opcode_setup[SpvOpPhi] = spvm_setup_constant;
+
+	ctx->opcode_setup[SpvOpAtomicLoad] = spvm_setup_constant;
+	ctx->opcode_setup[SpvOpAtomicExchange] = spvm_setup_constant;
+	ctx->opcode_setup[SpvOpAtomicCompareExchange] = spvm_setup_constant;
+	ctx->opcode_setup[SpvOpAtomicIIncrement] = spvm_setup_constant;
+	ctx->opcode_setup[SpvOpAtomicIDecrement] = spvm_setup_constant;
+	ctx->opcode_setup[SpvOpAtomicIAdd] = spvm_setup_constant;
+	ctx->opcode_setup[SpvOpAtomicISub] = spvm_setup_constant;
+	ctx->opcode_setup[SpvOpAtomicSMin] = spvm_setup_constant;
+	ctx->opcode_setup[SpvOpAtomicUMin] = spvm_setup_constant;
+	ctx->opcode_setup[SpvOpAtomicSMax] = spvm_setup_constant;
+	ctx->opcode_setup[SpvOpAtomicUMax] = spvm_setup_constant;
+	ctx->opcode_setup[SpvOpAtomicAnd] = spvm_setup_constant;
+	ctx->opcode_setup[SpvOpAtomicOr] = spvm_setup_constant;
+	ctx->opcode_setup[SpvOpAtomicXor] = spvm_setup_constant;
 }

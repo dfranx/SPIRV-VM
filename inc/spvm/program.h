@@ -52,6 +52,7 @@ typedef struct {
 
 	void(*allocate_workgroup_memory)(struct spvm_state*, spvm_word, spvm_word);
 	void(*write_workgroup_memory)(struct spvm_state*, spvm_word, spvm_word);
+	void(*atomic_operation)(spvm_word, spvm_word, struct spvm_state*);
 
 	void* user_data;
 } spvm_program;
