@@ -24,6 +24,9 @@ spvm_state_t _spvm_state_create_base(spvm_program_t prog, spvm_byte force_derv, 
 	state->context = prog->context;
 	state->_derivative_is_group_member = is_derv_member;
 
+	for (size_t i = 0; i < prog->bound; i++)
+		state->results[i].storage_class = SpvStorageClassMax;
+
 	for (size_t i = 0; i < prog->code_length; i++) {
 		spvm_word opcode_data = SPVM_READ_WORD(state->code_current);
 		spvm_word word_count = ((opcode_data & (~SpvOpCodeMask)) >> SpvWordCountShift) - 1;
