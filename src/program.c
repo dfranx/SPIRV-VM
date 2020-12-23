@@ -30,6 +30,11 @@ spvm_program_t spvm_program_create(spvm_context_t ctx, spvm_source spv, size_t s
 	prog->local_size_y = 1;
 	prog->local_size_z = 1;
 
+	prog->geometry_invocations = 1;
+	prog->geometry_output_count = 1;
+	prog->geometry_input = SpvExecutionModeInputPoints;
+	prog->geometry_output = SpvExecutionModeOutputPoints;
+
 	return prog;
 }
 spvm_string spvm_program_add_extension(spvm_program_t prog, spvm_word length)

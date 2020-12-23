@@ -119,7 +119,17 @@ void spvm_setup_OpExecutionMode(spvm_word word_count, spvm_state_t state)
 		state->owner->local_size_x = SPVM_READ_WORD(state->code_current);
 		state->owner->local_size_y = SPVM_READ_WORD(state->code_current);
 		state->owner->local_size_z = SPVM_READ_WORD(state->code_current);
-	}
+	} else if (execution_mode == SpvExecutionModeInvocations)
+		state->owner->geometry_invocations = SPVM_READ_WORD(state->code_current);
+	else if (execution_mode == SpvExecutionModeOutputVertices)
+		state->owner->geometry_output_count = SPVM_READ_WORD(state->code_current);
+	else if (execution_mode == SpvExecutionModeInputPoints || execution_mode == SpvExecutionModeInputLines ||
+			 execution_mode == SpvExecutionModeTriangles || execution_mode == SpvExecutionModeInputLinesAdjacency ||
+			 execution_mode == SpvExecutionModeInputTrianglesAdjacency)
+		state->owner->geometry_input = execution_mode;
+	else if (execution_mode == SpvExecutionModeOutputPoints || execution_mode == SpvExecutionModeOutputLineStrip ||
+			 execution_mode == SpvExecutionModeOutputTriangleStrip)
+		state->owner->geometry_output = execution_mode;
 }
 
 /* 3.32.6 Type-Declaration Instructions */

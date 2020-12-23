@@ -50,6 +50,11 @@ typedef struct {
 	spvm_word local_size_y;
 	spvm_word local_size_z;
 
+	spvm_word geometry_invocations;
+	spvm_word geometry_output_count;
+	spvm_word geometry_input;
+	spvm_word geometry_output;
+
 	void(*allocate_workgroup_memory)(struct spvm_state*, spvm_word, spvm_word);
 	void(*write_workgroup_memory)(struct spvm_state*, spvm_word, spvm_word);
 	void(*atomic_operation)(spvm_word, spvm_word, struct spvm_state*);

@@ -672,10 +672,10 @@ void spvm_execute_GLSL450_Ldexp(spvm_word type, spvm_word id, spvm_word word_cou
 
 	if (type_info->value_bitcount > 32)
 		for (spvm_word i = 0; i < state->results[id].member_count; i++)
-			state->results[id].members[i].value.d = ldexp(state->results[x].members[i].value.d, &state->results[exp].members[i].value.s);
+			state->results[id].members[i].value.d = ldexp(state->results[x].members[i].value.d, state->results[exp].members[i].value.s);
 	else
 		for (spvm_word i = 0; i < state->results[id].member_count; i++)
-			state->results[id].members[i].value.f = ldexpf(state->results[x].members[i].value.f, &state->results[exp].members[i].value.s);
+			state->results[id].members[i].value.f = ldexpf(state->results[x].members[i].value.f, state->results[exp].members[i].value.s);
 }
 void spvm_execute_GLSL450_PackSnorm4x8(spvm_word type, spvm_word id, spvm_word word_count, spvm_state_t state)
 {
