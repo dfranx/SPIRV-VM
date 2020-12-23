@@ -334,14 +334,22 @@ void spvm_setup_OpVariable(spvm_word word_count, spvm_state_t state)
 {
 	spvm_word var_type = SPVM_READ_WORD(state->code_current);
 	spvm_word id = SPVM_READ_WORD(state->code_current);
+	spvm_word storage_class = SPVM_READ_WORD(state->code_current);
+	spvm_word initializer = -1;
+	
+	if (word_count >= 4)
+		initializer = SPVM_READ_WORD(state->code_current);
 
 	state->results[id].type = spvm_result_type_variable;
-	state->results[id].storage_class = SPVM_READ_WORD(state->code_current);
+	state->results[id].storage_class = storage_class;
 	state->results[id].owner = state->current_function;
 
 	spvm_result_allocate_typed_value(&state->results[id], state->results, var_type);
 
-	if (state->owner->allocate_workgroup_memory && state->results[id].storage_class == SpvStorageClassWorkgroup)
+	if (initializer != -1)
+		spvm_member_memcpy(state->results[id].members, state->results[initializer].members, state->results[id].member_count);
+
+	if (state->owner->allocate_workgroup_memory && storage_class == SpvStorageClassWorkgroup)
 		state->owner->allocate_workgroup_memory(state, id, var_type);
 }
 void spvm_setup_OpLoad(spvm_word word_count, spvm_state_t state)
