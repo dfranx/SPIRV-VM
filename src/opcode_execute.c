@@ -440,9 +440,15 @@ void spvm_execute_OpImageRead(spvm_word word_count, spvm_state_t state)
 			z = coord->members[2].value.s;
 
 		float* data = spvm_image_read(img, x, y, z);
-
+		
 		for (int i = 0; i < output->member_count; i++)
 			output->members[i].value.f = data[i];
+
+		// report undefined behavior
+		if (state->analyzer) {
+			if (x < 0 || y < 0 || z < 0 || x >= img->width || y >= img->height || z >= img->depth)
+				state->analyzer->on_undefined_behavior(state, spvm_undefined_behavior_image_read_out_of_bounds);
+		}
 	}
 }
 void spvm_execute_OpImageWrite(spvm_word word_count, spvm_state_t state)
@@ -470,6 +476,12 @@ void spvm_execute_OpImageWrite(spvm_word word_count, spvm_state_t state)
 			rgba[i] = texel->members[i].value.f;
 
 		spvm_image_write(img, x, y, z, rgba);
+
+		// report undefined behavior
+		if (state->analyzer) {
+			if (x < 0 || y < 0 || z < 0 || x >= img->width || y >= img->height || z >= img->depth)
+				state->analyzer->on_undefined_behavior(state, spvm_undefined_behavior_image_read_out_of_bounds);
+		}
 	}
 }
 
@@ -604,7 +616,10 @@ void spvm_execute_OpVectorExtractDynamic(spvm_word word_count, spvm_state_t stat
 
 	spvm_word index = state->results[index_id].members[0].value.u64;
 
-	state->results[id].members[0].value.u64 = state->results[vector].members[index].value.u64;
+	if (index < 0 || index >= state->results[vector].member_count)
+		state->results[id].members[0].value.u64 = state->results[vector].members[index].value.u64;
+	else if (state->analyzer)
+		state->analyzer->on_undefined_behavior(state, spvm_undefined_behavior_vector_extract_dynamic);
 }
 void spvm_execute_OpVectorInsertDynamic(spvm_word word_count, spvm_state_t state)
 {
@@ -617,7 +632,11 @@ void spvm_execute_OpVectorInsertDynamic(spvm_word word_count, spvm_state_t state
 	spvm_word index = state->results[index_id].members[0].value.u64;
 
 	spvm_member_memcpy(state->results[id].members, state->results[vector].members, state->results[id].member_count);
-	state->results[id].members[index].value.u64 = state->results[comp].members[0].value.u64;
+
+	if (index < 0 || index >= state->results[id].member_count)
+		state->results[id].members[index].value.u64 = state->results[comp].members[0].value.u64;
+	else if (state->analyzer)
+		state->analyzer->on_undefined_behavior(state, spvm_undefined_behavior_vector_insert_dynamic);
 }
 void spvm_execute_OpVectorShuffle(spvm_word word_count, spvm_state_t state)
 {
@@ -812,8 +831,12 @@ void spvm_execute_OpUDiv(spvm_word word_count, spvm_state_t state)
 	spvm_word op1 = SPVM_READ_WORD(state->code_current);
 	spvm_word op2 = SPVM_READ_WORD(state->code_current);
 
-	for (spvm_word i = 0; i < state->results[id].member_count; i++)
+	for (spvm_word i = 0; i < state->results[id].member_count; i++) {
 		state->results[id].members[i].value.u64 = state->results[op1].members[i].value.u64 / state->results[op2].members[i].value.u64;
+		
+		if (state->analyzer && state->results[op2].members[i].value.u64 == 0)
+			state->analyzer->on_undefined_behavior(state, spvm_undefined_behavior_div_by_zero);
+	}
 }
 void spvm_execute_OpSDiv(spvm_word word_count, spvm_state_t state)
 {
@@ -822,8 +845,12 @@ void spvm_execute_OpSDiv(spvm_word word_count, spvm_state_t state)
 	spvm_word op1 = SPVM_READ_WORD(state->code_current);
 	spvm_word op2 = SPVM_READ_WORD(state->code_current);
 
-	for (spvm_word i = 0; i < state->results[id].member_count; i++)
+	for (spvm_word i = 0; i < state->results[id].member_count; i++) {
 		state->results[id].members[i].value.s = state->results[op1].members[i].value.s / state->results[op2].members[i].value.s;
+		
+		if (state->analyzer && state->results[op2].members[i].value.s == 0) // TODO: also op2 == -1, op1 == minimum representable value?
+			state->analyzer->on_undefined_behavior(state, spvm_undefined_behavior_div_by_zero);	
+	}
 }
 void spvm_execute_OpFDiv(spvm_word word_count, spvm_state_t state)
 {
@@ -836,11 +863,19 @@ void spvm_execute_OpFDiv(spvm_word word_count, spvm_state_t state)
 
 	// TODO: is there a better way to do this?
 	if (type_info->value_bitcount > 32)
-		for (spvm_word i = 0; i < state->results[id].member_count; i++)
+		for (spvm_word i = 0; i < state->results[id].member_count; i++) {
 			state->results[id].members[i].value.d = state->results[op1].members[i].value.d / state->results[op2].members[i].value.d;
+
+			if (state->analyzer && state->results[op2].members[i].value.d == 0.0)
+				state->analyzer->on_undefined_behavior(state, spvm_undefined_behavior_div_by_zero);	
+		}
 	else
-		for (spvm_word i = 0; i < state->results[id].member_count; i++)
+		for (spvm_word i = 0; i < state->results[id].member_count; i++) {
 			state->results[id].members[i].value.f = state->results[op1].members[i].value.f / state->results[op2].members[i].value.f;
+
+			if (state->analyzer && state->results[op2].members[i].value.f == 0.0f)
+				state->analyzer->on_undefined_behavior(state, spvm_undefined_behavior_div_by_zero);	
+		}
 }
 void spvm_execute_OpUMod(spvm_word word_count, spvm_state_t state)
 {
@@ -849,8 +884,12 @@ void spvm_execute_OpUMod(spvm_word word_count, spvm_state_t state)
 	spvm_word op1 = SPVM_READ_WORD(state->code_current);
 	spvm_word op2 = SPVM_READ_WORD(state->code_current);
 
-	for (spvm_word i = 0; i < state->results[id].member_count; i++)
+	for (spvm_word i = 0; i < state->results[id].member_count; i++) {
 		state->results[id].members[i].value.u64 = state->results[op1].members[i].value.u64 % state->results[op2].members[i].value.u64;
+
+		if (state->analyzer && state->results[op2].members[i].value.u64 == 0)
+			state->analyzer->on_undefined_behavior(state, spvm_undefined_behavior_mod_by_zero);	
+	}
 }
 void spvm_execute_OpSMod(spvm_word word_count, spvm_state_t state)
 {
@@ -859,8 +898,12 @@ void spvm_execute_OpSMod(spvm_word word_count, spvm_state_t state)
 	spvm_word op1 = SPVM_READ_WORD(state->code_current);
 	spvm_word op2 = SPVM_READ_WORD(state->code_current);
 
-	for (spvm_word i = 0; i < state->results[id].member_count; i++)
+	for (spvm_word i = 0; i < state->results[id].member_count; i++) {
 		state->results[id].members[i].value.s = state->results[op1].members[i].value.s % state->results[op2].members[i].value.s;
+		
+		if (state->analyzer && state->results[op2].members[i].value.s == 0) // TODO: mod by -1, while op1 is min representable value for operands type
+			state->analyzer->on_undefined_behavior(state, spvm_undefined_behavior_mod_by_zero);	
+	}
 }
 void spvm_execute_OpFMod(spvm_word word_count, spvm_state_t state)
 {
@@ -881,6 +924,9 @@ void spvm_execute_OpFMod(spvm_word word_count, spvm_state_t state)
 				sign = -1.0;
 
 			state->results[id].members[i].value.d = sign * fmod(state->results[op1].members[i].value.d, state->results[op2].members[i].value.d);
+		
+			if (state->analyzer && state->results[op2].members[i].value.d == 0.0)
+					state->analyzer->on_undefined_behavior(state, spvm_undefined_behavior_mod_by_zero);	
 		}
 	else
 		for (spvm_word i = 0; i < state->results[id].member_count; i++) {
@@ -891,6 +937,9 @@ void spvm_execute_OpFMod(spvm_word word_count, spvm_state_t state)
 				sign = -1.0;
 
 			state->results[id].members[i].value.f = sign * fmodf(state->results[op1].members[i].value.f, state->results[op2].members[i].value.f);
+
+			if (state->analyzer && state->results[op2].members[i].value.f == 0.0f)
+				state->analyzer->on_undefined_behavior(state, spvm_undefined_behavior_mod_by_zero);	
 		}
 }
 void spvm_execute_OpVectorTimesScalar(spvm_word word_count, spvm_state_t state)
@@ -1074,6 +1123,8 @@ void spvm_execute_OpShiftRightLogical(spvm_word word_count, spvm_state_t state)
 	spvm_word base = SPVM_READ_WORD(state->code_current);
 	spvm_word shift = SPVM_READ_WORD(state->code_current);
 
+	// TODO: call state->analyzer->on_defined_behavior when shift is >>> base
+
 	for (spvm_word i = 0; i < state->results[id].member_count; i++)
 		state->results[id].members[i].value.u64 = state->results[base].members[i].value.u64 >> state->results[shift].members[i].value.u64;
 }
@@ -1083,6 +1134,8 @@ void spvm_execute_OpShiftRightArithmetic(spvm_word word_count, spvm_state_t stat
 	spvm_word id = SPVM_READ_WORD(state->code_current);
 	spvm_word base = SPVM_READ_WORD(state->code_current);
 	spvm_word shift = SPVM_READ_WORD(state->code_current);
+
+	// TODO: call state->analyzer->on_defined_behavior when shift is >>> base
 
 	for (spvm_word i = 0; i < state->results[id].member_count; i++)
 		state->results[id].members[i].value.s = state->results[base].members[i].value.s >> state->results[shift].members[i].value.s;
@@ -1729,7 +1782,7 @@ void _spvm_context_create_execute_table(spvm_context_t ctx)
 	ctx->opcode_execute[SpvOpAccessChain] = spvm_execute_OpAccessChain;
 	ctx->opcode_execute[SpvOpPtrEqual] = spvm_execute_OpPtrEqual;
 	ctx->opcode_execute[SpvOpPtrNotEqual] = spvm_execute_OpPtrNotEqual;
-	ctx->opcode_execute[SpvOpPtrDiff] = spvm_execute_OpPtrNotEqual;
+	ctx->opcode_execute[SpvOpPtrDiff] = NULL;
 	ctx->opcode_execute[SpvOpFunctionCall] = spvm_execute_OpFunctionCall;
 	ctx->opcode_execute[SpvOpReturn] = spvm_execute_OpReturn;
 	ctx->opcode_execute[SpvOpReturnValue] = spvm_execute_OpReturnValue;

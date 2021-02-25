@@ -3,6 +3,7 @@
 
 #include <spvm/program.h>
 #include <spvm/result.h>
+#include <spvm/analyzer.h>
 
 typedef struct spvm_state {
 	spvm_context_t context;
@@ -46,6 +47,9 @@ typedef struct spvm_state {
 	spvm_word current_line;
 	spvm_word current_column;
 	spvm_word instruction_count;
+
+	// pointer to analyzer
+	spvm_analyzer_t analyzer;
 
 	void* user_data;
 } spvm_state;

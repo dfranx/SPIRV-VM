@@ -22,6 +22,7 @@ spvm_state_t _spvm_state_create_base(spvm_program_t prog, spvm_byte force_derv, 
 	state->function_stack_current = 0;
 	state->function_stack = NULL;
 	state->context = prog->context;
+	state->analyzer = NULL;
 	state->_derivative_is_group_member = is_derv_member;
 
 	for (size_t i = 0; i < prog->bound; i++)
