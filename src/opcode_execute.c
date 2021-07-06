@@ -418,6 +418,38 @@ void spvm_execute_OpImageQuerySize(spvm_word word_count, spvm_state_t state)
 	if (state->results[id].member_count > 2)
 		state->results[id].members[2].value.s = img->depth;
 }
+void spvm_execute_OpImageQuerySizeLod(spvm_word word_count, spvm_state_t state)
+{
+	SPVM_SKIP_WORD(state->code_current);
+	spvm_word id = SPVM_READ_WORD(state->code_current);
+	spvm_word image_id = SPVM_READ_WORD(state->code_current);
+	spvm_word lod_id = SPVM_READ_WORD(state->code_current);
+
+	int lod = state->results[lod_id].members[0].value.s;
+	spvm_image_t img = state->results[image_id].members[0].image_data;
+#if 0
+	// XXX TODO function(s) instead of img->user_data set in SHADERed
+	unsigned texId = (unsigned)(uintptr_t)img->user_data;
+	const int n = state->results[id].member_count;
+	const GLenum target = n > 2 ? GL_TEXTURE_3D : n > 1 ? GL_TEXTURE_2D : GL_TEXTURE_1D;
+	spvm_member *members = state->results[id].members;
+	glBindTexture(target, texId);
+	if (n > 0)
+		glGetTexLevelParameteriv(target, lod, GL_TEXTURE_WIDTH, &members[0].value.s);
+	if (n > 1)
+		glGetTexLevelParameteriv(target, lod, GL_TEXTURE_HEIGHT, &members[1].value.s);
+	if (n > 2)
+		glGetTexLevelParameteriv(target, lod, GL_TEXTURE_DEPTH, &members[2].value.s);
+	glBindTexture(target, 0);
+#else
+	if (state->results[id].member_count > 0)
+		state->results[id].members[0].value.s = img->width;
+	if (state->results[id].member_count > 1)
+		state->results[id].members[1].value.s = img->height;
+	if (state->results[id].member_count > 2)
+		state->results[id].members[2].value.s = img->depth;
+#endif
+}
 void spvm_execute_OpImageRead(spvm_word word_count, spvm_state_t state)
 {
 	spvm_word res_type = SPVM_READ_WORD(state->code_current);
@@ -483,6 +515,15 @@ void spvm_execute_OpImageWrite(spvm_word word_count, spvm_state_t state)
 				state->analyzer->on_undefined_behavior(state, spvm_undefined_behavior_image_read_out_of_bounds);
 		}
 	}
+}
+void spvm_execute_OpImage(spvm_word word_count, spvm_state_t state)
+{
+	SPVM_SKIP_WORD(state->code_current);
+	spvm_word id = SPVM_READ_WORD(state->code_current);
+	spvm_word image_id = SPVM_READ_WORD(state->code_current);
+
+	spvm_image_t image = state->results[image_id].members[0].image_data;
+	state->results[id].members[0].image_data = image;
 }
 
 /* 3.32.11 Conversion Instructions */
@@ -1888,6 +1929,7 @@ void _spvm_context_create_execute_table(spvm_context_t ctx)
 	ctx->opcode_execute[SpvOpImageSampleExplicitLod] = spvm_execute_OpImageSampleImplicitLod;
 	ctx->opcode_execute[SpvOpImageFetch] = spvm_execute_OpImageFetch;
 	ctx->opcode_execute[SpvOpImageGather] = spvm_execute_OpImageGather;
+	ctx->opcode_execute[SpvOpImageQuerySizeLod] = spvm_execute_OpImageQuerySizeLod;
 	ctx->opcode_execute[SpvOpImageQuerySize] = spvm_execute_OpImageQuerySize;
 	ctx->opcode_execute[SpvOpImageSampleDrefImplicitLod] = NULL;
 	ctx->opcode_execute[SpvOpImageSampleDrefExplicitLod] = NULL;
@@ -1898,9 +1940,9 @@ void _spvm_context_create_execute_table(spvm_context_t ctx)
 	ctx->opcode_execute[SpvOpImageDrefGather] = NULL;
 	ctx->opcode_execute[SpvOpImageRead] = spvm_execute_OpImageRead;
 	ctx->opcode_execute[SpvOpImageWrite] = spvm_execute_OpImageWrite;
+	ctx->opcode_execute[SpvOpImage] = spvm_execute_OpImage;
 	ctx->opcode_execute[SpvOpImageQueryFormat] = NULL;
 	ctx->opcode_execute[SpvOpImageQueryOrder] = NULL;
-	ctx->opcode_execute[SpvOpImageQuerySizeLod] = NULL;
 	ctx->opcode_execute[SpvOpImageQueryLod] = NULL;
 	ctx->opcode_execute[SpvOpImageQueryLevels] = NULL;
 	ctx->opcode_execute[SpvOpImageQuerySamples] = NULL;

@@ -602,6 +602,7 @@ void _spvm_context_create_setup_table(spvm_context_t ctx)
 	ctx->opcode_setup[SpvOpImageSampleProjDrefExplicitLod] = spvm_setup_constant;
 	ctx->opcode_setup[SpvOpImageDrefGather] = spvm_setup_constant;
 	ctx->opcode_setup[SpvOpImageRead] = spvm_setup_constant;
+	ctx->opcode_setup[SpvOpImage] = spvm_setup_constant;
 	ctx->opcode_setup[SpvOpImageQueryFormat] = spvm_setup_constant;
 	ctx->opcode_setup[SpvOpImageQueryOrder] = spvm_setup_constant;
 	ctx->opcode_setup[SpvOpImageQuerySizeLod] = spvm_setup_constant;
