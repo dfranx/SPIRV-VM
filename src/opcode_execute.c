@@ -403,6 +403,24 @@ void spvm_execute_OpImageGather(spvm_word word_count, spvm_state_t state)
 		state->results[id].members[i].value.f = sample[comp];
 	}
 }
+void spvm_execute_OpImageQuerySizeLod(spvm_word word_count, spvm_state_t state)
+{
+	SPVM_SKIP_WORD(state->code_current);
+	spvm_word id = SPVM_READ_WORD(state->code_current);
+	spvm_word image_id = SPVM_READ_WORD(state->code_current);
+	spvm_word lod_id = SPVM_READ_WORD(state->code_current);
+
+	int lod = state->results[lod_id].members[0].value.s;
+	spvm_image_t img = state->results[image_id].members[0].image_data;
+
+	// TODO: lod
+	if (state->results[id].member_count > 0)
+		state->results[id].members[0].value.s = img->width;
+	if (state->results[id].member_count > 1)
+		state->results[id].members[1].value.s = img->height;
+	if (state->results[id].member_count > 2)
+		state->results[id].members[2].value.s = img->depth;
+}
 void spvm_execute_OpImageQuerySize(spvm_word word_count, spvm_state_t state)
 {
 	SPVM_SKIP_WORD(state->code_current);
@@ -417,38 +435,6 @@ void spvm_execute_OpImageQuerySize(spvm_word word_count, spvm_state_t state)
 		state->results[id].members[1].value.s = img->height;
 	if (state->results[id].member_count > 2)
 		state->results[id].members[2].value.s = img->depth;
-}
-void spvm_execute_OpImageQuerySizeLod(spvm_word word_count, spvm_state_t state)
-{
-	SPVM_SKIP_WORD(state->code_current);
-	spvm_word id = SPVM_READ_WORD(state->code_current);
-	spvm_word image_id = SPVM_READ_WORD(state->code_current);
-	spvm_word lod_id = SPVM_READ_WORD(state->code_current);
-
-	int lod = state->results[lod_id].members[0].value.s;
-	spvm_image_t img = state->results[image_id].members[0].image_data;
-#if 0
-	// XXX TODO function(s) instead of img->user_data set in SHADERed
-	unsigned texId = (unsigned)(uintptr_t)img->user_data;
-	const int n = state->results[id].member_count;
-	const GLenum target = n > 2 ? GL_TEXTURE_3D : n > 1 ? GL_TEXTURE_2D : GL_TEXTURE_1D;
-	spvm_member *members = state->results[id].members;
-	glBindTexture(target, texId);
-	if (n > 0)
-		glGetTexLevelParameteriv(target, lod, GL_TEXTURE_WIDTH, &members[0].value.s);
-	if (n > 1)
-		glGetTexLevelParameteriv(target, lod, GL_TEXTURE_HEIGHT, &members[1].value.s);
-	if (n > 2)
-		glGetTexLevelParameteriv(target, lod, GL_TEXTURE_DEPTH, &members[2].value.s);
-	glBindTexture(target, 0);
-#else
-	if (state->results[id].member_count > 0)
-		state->results[id].members[0].value.s = img->width;
-	if (state->results[id].member_count > 1)
-		state->results[id].members[1].value.s = img->height;
-	if (state->results[id].member_count > 2)
-		state->results[id].members[2].value.s = img->depth;
-#endif
 }
 void spvm_execute_OpImageRead(spvm_word word_count, spvm_state_t state)
 {

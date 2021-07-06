@@ -25,7 +25,6 @@ OpMemberDecorateString
 [3.32.4 Extension Instructions]
 ---------------------------------------------------------
 OpExtension
-OpExecutionMode
 OpExecutionModeId
 
 [3.32.6 Type-Declaration Instructions]
