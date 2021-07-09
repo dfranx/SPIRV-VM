@@ -1628,6 +1628,7 @@ void spvm_execute_OpBranch(spvm_word word_count, spvm_state_t state)
 {
 	spvm_word id = SPVM_READ_WORD(state->code_current);
 	state->code_current = state->results[id].source_location;
+	state->function_stack_cfg[state->function_stack_current] = id;
 
 	state->did_jump = 1;
 }
