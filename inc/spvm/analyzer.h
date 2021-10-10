@@ -3,6 +3,10 @@
 
 #include <spvm/types.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif // __cplusplus
+
 enum spvm_undefined_behavior {
 	spvm_undefined_behavior_none,							// not an undefined behavior
 	spvm_undefined_behavior_div_by_zero,					// a/b when b == 0
@@ -35,5 +39,8 @@ typedef struct spvm_analyzer {
 } spvm_analyzer;
 typedef struct spvm_analyzer* spvm_analyzer_t;
 
+#ifdef __cplusplus
+}
+#endif // __cplusplus
 
 #endif // __SPIRV_VM_ANALYZER_H__

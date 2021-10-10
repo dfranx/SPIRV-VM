@@ -5,6 +5,10 @@
 #include <spvm/spirv.h>
 #include <spvm/context.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif // __cplusplus
+
 typedef struct
 {
 	SpvExecutionModel exec_model;
@@ -13,6 +17,14 @@ typedef struct
 	spvm_word globals_count;
 	spvm_word* globals; // interface <id>
 } spvm_entry_point;
+
+typedef struct
+{
+	spvm_string name; // points to OpString result
+	SpvSourceLanguage language;
+	spvm_word language_version;
+	spvm_string source;
+} spvm_file;
 
 typedef struct {
 	spvm_context_t context;
@@ -23,13 +35,13 @@ typedef struct {
 	spvm_word generator_id;
 	spvm_word generator_version;
 
-	spvm_word bound;
+	size_t file_count;
+	spvm_file* files;
+
+	unsigned bound;
 
 	size_t code_length;
 	spvm_source code;
-
-	SpvSourceLanguage language;
-	spvm_word language_version;
 
 	spvm_word extension_count;
 	spvm_string* extensions;
@@ -68,5 +80,9 @@ spvm_string spvm_program_add_extension(spvm_program_t prog, spvm_word length);
 spvm_entry_point* spvm_program_create_entry_point(spvm_program_t prog);
 void spvm_program_add_capability(spvm_program_t prog, SpvCapability cap);
 void spvm_program_delete(spvm_program_t prog);
+
+#ifdef __cplusplus
+}
+#endif // __cplusplus
 
 #endif // __SPIRV_VM_PROGRAM_H__
