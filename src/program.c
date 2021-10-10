@@ -78,5 +78,8 @@ void spvm_program_delete(spvm_program_t prog)
 	if (prog->capability_count)
 		free(prog->capabilities);
 
+	if (prog->file_count)
+		free(prog->files);
+
 	free(prog);
 }

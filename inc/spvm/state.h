@@ -5,6 +5,10 @@
 #include <spvm/result.h>
 #include <spvm/analyzer.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif // __cplusplus
+
 typedef struct spvm_state {
 	spvm_context_t context;
 	spvm_program_t owner;
@@ -81,5 +85,9 @@ spvm_member_t spvm_state_get_object_member(spvm_state_t state, spvm_result_t var
 void spvm_state_push_function_stack(spvm_state_t state, spvm_result_t func, spvm_word func_res_id);
 void spvm_state_pop_function_stack(spvm_state_t state);
 void spvm_state_delete(spvm_state_t state);
+
+#ifdef __cplusplus
+}
+#endif // __cplusplus
 
 #endif // __SPIRV_VM_STATE_H__

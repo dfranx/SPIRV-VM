@@ -3,6 +3,10 @@
 
 #include <spvm/opcode.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif // __cplusplus
+
 #define SPVM_OPCODE_TABLE_LENGTH 405
 
 typedef struct spvm_context {
@@ -17,5 +21,9 @@ void spvm_context_deinitialize(spvm_context_t ctx);
 /* PRIVATE FUNCTIONS */
 void _spvm_context_create_execute_table(spvm_context_t ctx);
 void _spvm_context_create_setup_table(spvm_context_t ctx);
+
+#ifdef __cplusplus
+}
+#endif // __cplusplus
 
 #endif // __SPIRV_VM_CONTEXT_H__
