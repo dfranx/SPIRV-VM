@@ -1,4 +1,5 @@
 #include <spvm/value.h>
+#include <assert.h>
 
 void spvm_member_free(spvm_member_t source, spvm_word value_count)
 {
@@ -11,8 +12,8 @@ void spvm_member_free(spvm_member_t source, spvm_word value_count)
 void spvm_member_memcpy(spvm_member_t target, spvm_member_t source, spvm_word value_count)
 {
 	for (spvm_word i = 0; i < value_count; i++) {
-		target[i].image_data = source[i].image_data;
 		target[i].value.u64 = source[i].value.u64;
+		assert(target[i].member_count == source[i].member_count);
 		if (target[i].member_count != 0)
 			spvm_member_memcpy(target[i].members, source[i].members, target[i].member_count);
 	}

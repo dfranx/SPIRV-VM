@@ -25,6 +25,9 @@ spvm_state_t _spvm_state_create_base(spvm_program_t prog, spvm_byte force_derv, 
 	state->analyzer = NULL;
 	state->_derivative_is_group_member = is_derv_member;
 
+	state->read_image = spvm_image_read_impl;
+	state->write_image = spvm_image_write_impl;
+
 	for (size_t i = 0; i < prog->bound; i++)
 		state->results[i].storage_class = SpvStorageClassMax;
 
@@ -113,7 +116,7 @@ void spvm_state_prepare(spvm_state_t state, spvm_word fnLocation)
 	state->did_jump = 0;
 	state->discarded = 0;
 	state->instruction_count = 0;
-	
+
 	if (!state->_derivative_is_group_member) {
 		if (state->derivative_group_x) spvm_state_prepare(state->derivative_group_x, fnLocation);
 		if (state->derivative_group_y) spvm_state_prepare(state->derivative_group_y, fnLocation);
@@ -160,7 +163,7 @@ void spvm_state_copy_uniforms(spvm_state_t dst, spvm_state_t src)
 		if (dst->results[ptr].storage_class != SpvStorageClassUniform &&
 			dst->results[ptr].storage_class != SpvStorageClassUniformConstant)
 			continue;
-		
+
 		for (spvm_word j = 0; j < src->owner->bound; j++) {
 			const spvm_string name2 = src->results[j].name;
 			ptr = src->results[j].pointer;
@@ -229,7 +232,7 @@ void spvm_state_call_function(spvm_state_t state)
 	spvm_source cur_code = state->code_current;
 
 	while (state->code_current)
-	{ 
+	{
 		// read data
 		spvm_word opcode_data = SPVM_READ_WORD(state->code_current);
 		spvm_word word_count = ((opcode_data & (~SpvOpCodeMask)) >> SpvWordCountShift) - 1;
