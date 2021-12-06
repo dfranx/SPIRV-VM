@@ -9,6 +9,11 @@
 extern "C" {
 #endif // __cplusplus
 
+typedef spvm_vec4f (*spvm_image_read_fn)(struct spvm_state*, struct spvm_image*,
+	int x, int y, int z, int layer, int level);
+typedef void (*spvm_image_write_fn)(struct spvm_state*, struct spvm_image*,
+	int x, int y, int z, int layer, int level, const spvm_vec4f* data);
+
 typedef struct spvm_state {
 	spvm_context_t context;
 	spvm_program_t owner;
@@ -34,6 +39,9 @@ typedef struct spvm_state {
 	void(*end_primitive)(struct spvm_state*, spvm_word);
 
 	void(*control_barrier)(struct spvm_state*, spvm_word, spvm_word, spvm_word);
+
+	spvm_image_read_fn read_image;
+	spvm_image_write_fn write_image;
 
 	float frag_coord[4];
 

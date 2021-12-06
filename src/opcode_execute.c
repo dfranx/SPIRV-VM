@@ -4,6 +4,8 @@
 #include <spvm/spirv.h>
 #include <spvm/image.h>
 #include <string.h>
+#include <assert.h>
+#include <stdbool.h>
 #include <math.h>
 
 /* opcodes */
@@ -93,13 +95,13 @@ void spvm_execute_OpAccessChain(spvm_word word_count, spvm_state_t state)
 	spvm_word index_id = SPVM_READ_WORD(state->code_current);
 	spvm_word index = state->results[index_id].members[0].value.s;
 
-	spvm_member_t result = state->results[value_id].members + MIN(index, state->results[value_id].member_count - 1);
+	spvm_member_t result = state->results[value_id].members + SPVM_MIN(index, state->results[value_id].member_count - 1);
 
 	while (index_count) {
 		index_id = SPVM_READ_WORD(state->code_current);
 		index = state->results[index_id].members[0].value.s;
 
-		result = result->members + MIN(index, result->member_count - 1);
+		result = result->members + SPVM_MIN(index, result->member_count - 1);
 
 		index_count--;
 	}
@@ -164,6 +166,8 @@ void spvm_execute_OpReturnValue(spvm_word word_count, spvm_state_t state)
 
 /* 3.32.10 Image Instruction */
 typedef struct {
+	spvm_word bits;
+
 	float bias;
 	float lod;
 	float dx[3];
@@ -173,8 +177,9 @@ typedef struct {
 	int sample;
 	float min_lod;
 } spvm_image_operands;
-void spvm_image_operands_parse(spvm_image_operands* info, spvm_word bits, spvm_state_t state)
+void spvm_image_operands_parse(spvm_image_operands* info, spvm_state_t state)
 {
+	spvm_word bits = info->bits = SPVM_READ_WORD(state->code_current);
 	if (bits & SpvImageOperandsBiasMask)
 		info->bias = state->results[SPVM_READ_WORD(state->code_current)].members[0].value.f;
 	if (bits & SpvImageOperandsLodMask)
@@ -210,172 +215,223 @@ void spvm_image_operands_parse(spvm_image_operands* info, spvm_word bits, spvm_s
 		info->min_lod = state->results[SPVM_READ_WORD(state->code_current)].members[0].value.f;
 }
 
-void process_cubemap_normal(float* nrml)
+// Returns the layer to be sampled
+float process_cubemap_normal(float* nrml)
 {
 	/* https://github.com/zauonlok/renderer/blob/a6b50f06e85659edbc8ee18c674e6f781aacfd84/renderer/core/texture.c#L210 */
+	/* https://www.khronos.org/registry/vulkan/specs/1.2-extensions/html/chap16.html#_cube_map_face_selection */
 	float absX = (float)fabs(nrml[0]);
 	float absY = (float)fabs(nrml[1]);
 	float absZ = (float)fabs(nrml[2]);
-	float ma, u, v;
+	float ma, layer;
 
 	if (absX > absY && absX > absZ) {
 		ma = absX;
 		if (nrml[0] > 0) {
 			nrml[0] = -nrml[2];
 			nrml[1] = -nrml[1];
-			nrml[2] = 0.0f;
+			layer = 0.0f;
 		} else {
 			nrml[0] = +nrml[2];
 			nrml[1] = -nrml[1];
-			nrml[2] = 1.0f;
+			layer = 1.0f;
 		}
 	} else if (absY > absZ) {
 		ma = absY;
 		if (nrml[1] > 0) {
 			nrml[0] = +nrml[0];
 			nrml[1] = +nrml[2];
-			nrml[2] = 2.0f;
+			layer = 2.0f;
 		} else {
 			nrml[0] = +nrml[0];
 			nrml[1] = -nrml[2];
-			nrml[2] = 3.0f;
+			layer = 3.0f;
 		}
 	} else {
 		ma = absZ;
 		if (nrml[2] > 0) {
 			nrml[0] = +nrml[0];
 			nrml[1] = -nrml[1];
-			nrml[2] = 4.0f;
+			layer = 4.0f;
 		} else {
 			nrml[0] = -nrml[0];
 			nrml[1] = -nrml[1];
-			nrml[2] = 5.0f;
+			layer = 5.0f;
 		}
 	}
 
 	nrml[0] = (nrml[0] / ma + 1) / 2;
 	nrml[1] = (nrml[1] / ma + 1) / 2;
-	nrml[2] /= 5.0f;
+	return layer;
 }
 
-void spvm_execute_OpImageSampleImplicitLod(spvm_word word_count, spvm_state_t state)
-{
-	spvm_word res_type = SPVM_READ_WORD(state->code_current);
-	spvm_word id = SPVM_READ_WORD(state->code_current);
-	spvm_word image_id = SPVM_READ_WORD(state->code_current);
-	spvm_word coord_id = SPVM_READ_WORD(state->code_current);
-
-	spvm_image_operands operands;
-	memset(&operands, 0, sizeof(spvm_image_operands));
-
-	if (word_count > 4) {
-		spvm_word operand_bits = SPVM_READ_WORD(state->code_current);
-		spvm_image_operands_parse(&operands, operand_bits, state);
+float spvm_execute_compare(float val, float ref, spvm_sampler_compare_op op) {
+	switch(op) {
+		case spvm_sampler_compare_op_never: return 0.f;
+		case spvm_sampler_compare_op_always: return 1.f;
+		case spvm_sampler_compare_op_equal:
+			return (ref == val) ? 1.f : 0.f;
+		case spvm_sampler_compare_op_not_equal:
+			return (ref != val) ? 1.f : 0.f;
+		case spvm_sampler_compare_op_greater:
+			return (ref > val) ? 1.f : 0.f;
+		case spvm_sampler_compare_op_less:
+			return (ref < val) ? 1.f : 0.f;
+		case spvm_sampler_compare_op_greater_or_equal:
+			return (ref >= val) ? 1.f : 0.f;
+		case spvm_sampler_compare_op_less_or_equal:
+			return (ref <= val) ? 1.f : 0.f;
+		default:
+			assert(!"Invalid sampler compare op");
+			return 0.f;
 	}
+}
 
+static spvm_vec4f spvm_op_image_sample(spvm_state_t state,
+		spvm_word sampled_image_id, spvm_word coord_id,
+		spvm_image_operands* operands, const float* dref, bool proj)
+{
 	spvm_result_t coord = &state->results[coord_id];
 
-	spvm_result_t image_container = &state->results[image_id];
-	spvm_image_t image = image_container->members[0].image_data;
+	spvm_result_t container = &state->results[sampled_image_id];
+	assert(container->member_count == 2u);
+	spvm_image* image = container->members[0].value.image;
+	assert(image);
+	spvm_sampler* sampler = container->members[1].value.sampler;
+	assert(sampler);
+
+	spvm_result_t sampled_image_type = spvm_state_get_type_info(state->results, &state->results[container->pointer]);
+	assert(sampled_image_type);
+	assert(sampled_image_type->value_type == spvm_value_type_sampled_image);
+
+	spvm_result_t image_type = spvm_state_get_type_info(state->results, &state->results[sampled_image_type->pointer]);
+	assert(image_type);
+	assert(image_type->value_type == spvm_value_type_image);
+	assert(image_type->image_info);
 
 	float stu[4] = { 0.0f };
-	for (spvm_word i = 0; i < coord->member_count; i++)
+	for (spvm_word i = 0; i < coord->member_count; i++) {
 		stu[i] = coord->members[i].value.f;
+	}
 
-	float* px = NULL;
+	spvm_vec4f res = {0};
 
-	if (image) {
-		stu[0] += operands.offsets[0][0] / (float)image->width;
-		stu[1] += operands.offsets[0][1] / (float)image->height;
-		stu[2] += operands.offsets[0][2] / (float)image->depth;
+	unsigned dim;
+	if (image_type->image_info->dim == SpvDim1D) {
+		dim = 1u;
+	} else if (image_type->image_info->dim == SpvDim2D ||
+			image_type->image_info->dim == SpvDimSubpassData) {
+		dim = 2u;
+	} else if (image_type->image_info->dim == SpvDim3D) {
+		dim = 3u;
+	} else if (image_type->image_info->dim == SpvDimCube) {
+		dim = 3u;
+	} else {
+		assert(!"Unhandled SpvDim");
+		dim = 3u;
+	}
 
-		spvm_result_t image_type = spvm_state_get_type_info(state->results, &state->results[image_container->pointer]);
-		
-		if (image_type != NULL) {
-			if (image_type->image_info == NULL)
-				image_type = &state->results[image_type->pointer];
-			
-			if (image_type->image_info != NULL && image_type->image_info->dim == SpvDimCube)
-				process_cubemap_normal(&stu[0]);
+	assert(!image_type->image_info->arrayed || !proj); // per spec
+
+	float layer = 0.f;
+	if (image_type->image_info->arrayed) {
+		layer = stu[dim];
+
+		if (image_type->image_info->dim == SpvDimCube) {
+			layer *= 6;
 		}
-		px = spvm_image_sample(image, stu[0], stu[1], stu[2]);
 	}
 
-	// todo: spvm_state_ddx/y(coord_id) ?
-
-	for (spvm_word i = 0; i < state->results[id].member_count && px; i++)
-		state->results[id].members[i].value.f = *(px + i);
-}
-void spvm_execute_OpSampledImage(spvm_word word_count, spvm_state_t state)
-{
-	SPVM_SKIP_WORD(state->code_current);
-	spvm_word id = SPVM_READ_WORD(state->code_current);
-	spvm_word image_id = SPVM_READ_WORD(state->code_current);
-
-	// TODO: sampler
-	state->results[id].members[0].image_data = state->results[image_id].members[0].image_data;
-}
-void spvm_execute_OpImageFetch(spvm_word word_count, spvm_state_t state)
-{
-	spvm_word res_type = SPVM_READ_WORD(state->code_current);
-	spvm_word id = SPVM_READ_WORD(state->code_current);
-	spvm_word image_id = SPVM_READ_WORD(state->code_current);
-	spvm_word coord_id = SPVM_READ_WORD(state->code_current);
-
-	spvm_image_operands operands;
-	memset(&operands, 0, sizeof(spvm_image_operands));
-
-	if (word_count > 4) {
-		spvm_word operand_bits = SPVM_READ_WORD(state->code_current);
-		spvm_image_operands_parse(&operands, operand_bits, state);
+	if (proj) {
+		for (unsigned i = 0u; i < dim; ++i) {
+			stu[i] /= stu[dim];
+		}
 	}
 
+	if (!operands->uses_offsets) {
+		stu[0] += operands->offsets[0][0] / (float)image->width;
+		stu[1] += operands->offsets[0][1] / (float)image->height;
+		stu[2] += operands->offsets[0][2] / (float)image->depth;
+	}
+
+	if (image_type->image_info->dim == SpvDimCube) {
+		layer += process_cubemap_normal(&stu[0]);
+	}
+
+	float level = 0.f;
+	if (operands->bits & SpvImageOperandsLodMask) {
+		level = operands->lod;
+	} else if (operands->bits & SpvImageOperandsGradMask) {
+		// TODO: would need to transform grad for cubemap
+		level = spvm_sampled_image_query_lod_from_grad(state, image, image_type->image_info,
+			sampler, operands->dx, operands->dy, operands->bias, operands->min_lod).dl;
+	} else {
+		level = spvm_sampled_image_query_lod(state, image, image_type->image_info,
+			sampler, coord_id, operands->bias, operands->min_lod).dl;
+	}
+
+	spvm_vec4f ret = spvm_sampled_image_sample(state, image, sampler,
+		stu[0], stu[1], stu[2], layer, level);
+
+	if (dref) {
+		ret.data[0] = spvm_execute_compare(ret.data[0], *dref, sampler->desc.compare_op);
+	}
+
+	return ret;
+}
+
+static spvm_vec4f spvm_op_image_gather(spvm_state_t state,
+		spvm_word sampled_image_id, spvm_word coord_id, int comp,
+		spvm_image_operands* operands, const float* dref)
+{
 	spvm_result_t coord = &state->results[coord_id];
 
-	spvm_result_t image_container = &state->results[image_id];
-	spvm_image_t image = image_container->members[0].image_data;
+	spvm_result_t container = &state->results[sampled_image_id];
+	assert(container->member_count == 2u);
+	spvm_image* image = container->members[0].value.image;
+	assert(image);
+	spvm_sampler* sampler = container->members[1].value.sampler;
+	assert(sampler);
+
+	spvm_result_t sampled_image_type = spvm_state_get_type_info(state->results, &state->results[container->pointer]);
+	assert(sampled_image_type);
+	assert(sampled_image_type->value_type == spvm_value_type_sampled_image);
+
+	spvm_result_t image_type = spvm_state_get_type_info(state->results, &state->results[sampled_image_type->pointer]);
+	assert(image_type);
+	assert(image_type->value_type == spvm_value_type_image);
+	assert(image_type->image_info);
 
 	float stu[4] = { 0.0f };
-	for (spvm_word i = 0; i < coord->member_count; i++)
-		stu[i] = coord->members[i].value.s + operands.offsets[0][i];
-
-	stu[0] /= image->width;
-	stu[1] /= image->height;
-	stu[2] /= image->depth;
-
-	// todo: spvm_state_ddx/y(coord_id) ?
-
-	float* px = spvm_image_sample(image, stu[0], stu[1], stu[2]);
-
-	for (spvm_word i = 0; i < state->results[id].member_count; i++)
-		state->results[id].members[i].value.f = *(px + i);
-}
-void spvm_execute_OpImageGather(spvm_word word_count, spvm_state_t state)
-{
-	spvm_word res_type = SPVM_READ_WORD(state->code_current);
-	spvm_word id = SPVM_READ_WORD(state->code_current);
-	spvm_word image_id = SPVM_READ_WORD(state->code_current);
-	spvm_word coord_id = SPVM_READ_WORD(state->code_current);
-	spvm_word comp_id = SPVM_READ_WORD(state->code_current);
-
-	spvm_image_operands operands;
-	memset(&operands, 0, sizeof(spvm_image_operands));
-
-	if (word_count > 4) {
-		spvm_word operand_bits = SPVM_READ_WORD(state->code_current);
-		spvm_image_operands_parse(&operands, operand_bits, state);
-	}
-
-	spvm_result_t coord = &state->results[coord_id];
-
-	spvm_word comp = state->results[coord_id].members[0].value.s;
-
-	spvm_result_t image_container = &state->results[image_id];
-	spvm_image_t image = image_container->members[0].image_data;
-
-	float stu[4] = { 0.0f };
-	for (spvm_word i = 0; i < coord->member_count; i++)
+	for (spvm_word i = 0; i < coord->member_count; i++) {
 		stu[i] = coord->members[i].value.f;
+	}
+
+	spvm_vec4f res = {0};
+
+	unsigned dim;
+	if (image_type->image_info->dim == SpvDim1D) {
+		dim = 1u;
+	} else if (image_type->image_info->dim == SpvDim2D ||
+			image_type->image_info->dim == SpvDimSubpassData) {
+		dim = 2u;
+	} else if (image_type->image_info->dim == SpvDim3D) {
+		dim = 3u;
+	} else if (image_type->image_info->dim == SpvDimCube) {
+		dim = 3u;
+	} else {
+		assert(!"Unhandled SpvDim");
+		dim = 3u;
+	}
+
+	float layer = 0.f;
+	if (image_type->image_info->arrayed) {
+		layer = stu[dim];
+
+		if (image_type->image_info->dim == SpvDimCube) {
+			layer *= 6;
+		}
+	}
 
 	int offs[4][2] = {
 		{ 0, 1 },
@@ -384,24 +440,198 @@ void spvm_execute_OpImageGather(spvm_word word_count, spvm_state_t state)
 		{ 0, 0 }
 	};
 
-	if (!operands.uses_offsets) {
-		stu[0] += operands.offsets[0][0] / (float)image->width;
-		stu[1] += operands.offsets[0][1] / (float)image->height;
-		stu[2] += operands.offsets[0][2] / (float)image->depth;
-	}
-	else {
+	if (!operands->uses_offsets) {
+		stu[0] += operands->offsets[0][0] / (float)image->width;
+		stu[1] += operands->offsets[0][1] / (float)image->height;
+		stu[2] += operands->offsets[0][2] / (float)image->depth;
+	} else {
 		for (int i = 0; i < 4; i++) {
-			offs[i][0] = operands.offsets[i][0];
-			offs[i][1] = operands.offsets[i][1];
+			offs[i][0] = operands->offsets[i][0];
+			offs[i][1] = operands->offsets[i][1];
 		}
 	}
 
-	// todo: spvm_state_ddx/y(coord_id) ?
-
-	for (int i = 0; i < 4; i++) {
-		float* sample = spvm_image_sample(image, stu[0] + (offs[i][0] / (float)image->width), stu[1] + (offs[i][1] / (float)image->height), stu[2]);
-		state->results[id].members[i].value.f = sample[comp];
+	if (image_type->image_info->dim == SpvDimCube) {
+		layer += process_cubemap_normal(&stu[0]);
 	}
+
+	// Implicit sampling not allowed for gather. The base level
+	// is used by default.
+	float level = 0.f;
+	if (operands->bits & SpvImageOperandsLodMask) {
+		level = operands->lod;
+	}
+
+	spvm_vec4f ret;
+	for (int i = 0; i < 4; i++) {
+		spvm_vec4f sample = spvm_fetch_texel(state, image, &sampler->desc,
+			stu[0] + (offs[i][0] / (float)image->width),
+			stu[1] + (offs[i][1] / (float)image->height),
+			stu[2], layer, level);
+		ret.data[i] = sample.data[comp];
+
+		// comparison is per gather operation
+		if (dref) {
+			ret.data[i] = spvm_execute_compare(ret.data[i], *dref, sampler->desc.compare_op);
+		}
+	}
+
+	return ret;
+}
+
+// same implementation for ImplicitLod and ExplicitLod
+void spvm_execute_OpImageSample_base(spvm_word word_count, spvm_state_t state, bool proj)
+{
+	spvm_word res_type = SPVM_READ_WORD(state->code_current);
+	spvm_word id = SPVM_READ_WORD(state->code_current);
+	spvm_word sampled_image_id = SPVM_READ_WORD(state->code_current);
+	spvm_word coord_id = SPVM_READ_WORD(state->code_current);
+
+	spvm_image_operands operands = {0};
+	if (word_count > 4) {
+		spvm_image_operands_parse(&operands, state);
+	}
+
+	spvm_vec4f res = spvm_op_image_sample(state, sampled_image_id,
+		coord_id, &operands, NULL, proj);
+
+	for (spvm_word i = 0; i < state->results[id].member_count; i++)
+		state->results[id].members[i].value.f = res.data[i];
+}
+
+void spvm_execute_OpImageSample(spvm_word word_count, spvm_state_t state)
+{
+	spvm_execute_OpImageSample_base(word_count, state, false);
+}
+
+void spvm_execute_OpImageSampleProj(spvm_word word_count, spvm_state_t state)
+{
+	spvm_execute_OpImageSample_base(word_count, state, true);
+}
+
+void spvm_execute_OpImageSampleDref_base(spvm_word word_count, spvm_state_t state,
+		bool proj)
+{
+	spvm_word res_type = SPVM_READ_WORD(state->code_current);
+	spvm_word id = SPVM_READ_WORD(state->code_current);
+	spvm_word sampled_image_id = SPVM_READ_WORD(state->code_current);
+	spvm_word coord_id = SPVM_READ_WORD(state->code_current);
+	spvm_word dref_id = SPVM_READ_WORD(state->code_current);
+
+	spvm_image_operands operands = {0};
+	if (word_count > 4) {
+		spvm_image_operands_parse(&operands, state);
+	}
+
+	spvm_result_t dref = &state->results[dref_id];
+	float dref_val = dref->members[0].value.f;
+
+	spvm_vec4f res = spvm_op_image_sample(state, sampled_image_id,
+		coord_id, &operands, &dref_val, proj);
+
+	for (spvm_word i = 0; i < state->results[id].member_count; i++) {
+		state->results[id].members[i].value.f = res.data[i];
+	}
+}
+
+void spvm_execute_OpImageSampleDref(spvm_word word_count, spvm_state_t state)
+{
+	spvm_execute_OpImageSampleDref_base(word_count, state, false);
+}
+
+void spvm_execute_OpImageSampleProjDref(spvm_word word_count, spvm_state_t state)
+{
+	spvm_execute_OpImageSampleDref_base(word_count, state, true);
+}
+
+void spvm_execute_OpSampledImage(spvm_word word_count, spvm_state_t state)
+{
+	SPVM_SKIP_WORD(state->code_current);
+	spvm_word id = SPVM_READ_WORD(state->code_current);
+	spvm_word image_id = SPVM_READ_WORD(state->code_current);
+	spvm_word sampler_id = SPVM_READ_WORD(state->code_current);
+
+	assert(state->results[id].member_count == 2u);
+	state->results[id].members[0].value.image = state->results[image_id].members[0].value.image;
+	state->results[id].members[1].value.sampler = state->results[sampler_id].members[0].value.sampler;
+}
+
+void spvm_execute_OpImageFetch(spvm_word word_count, spvm_state_t state)
+{
+	spvm_word res_type = SPVM_READ_WORD(state->code_current);
+	spvm_word id = SPVM_READ_WORD(state->code_current);
+	spvm_word image_id = SPVM_READ_WORD(state->code_current);
+	spvm_word coord_id = SPVM_READ_WORD(state->code_current);
+
+	spvm_image_operands operands = {0};
+	if (word_count > 4) {
+		spvm_image_operands_parse(&operands, state);
+	}
+
+	spvm_result_t coord = &state->results[coord_id];
+
+	spvm_result_t image_container = &state->results[image_id];
+	spvm_image* image = image_container->members[0].value.image;
+
+	int stu[4] = { 0 };
+	for (spvm_word i = 0; i < coord->member_count; i++)
+		stu[i] = coord->members[i].value.s + operands.offsets[0][i];
+
+	int level = 0u;
+	if (operands.bits & SpvImageOperandsLodMask)
+		level = operands.lod;
+
+	spvm_vec4f px = spvm_image_read(state, image, stu[0], stu[1], stu[2], stu[3], level);
+
+	for (spvm_word i = 0; i < state->results[id].member_count; i++)
+		state->results[id].members[i].value.f = px.data[i];
+}
+void spvm_execute_OpImageGather(spvm_word word_count, spvm_state_t state)
+{
+	spvm_word res_type = SPVM_READ_WORD(state->code_current);
+	spvm_word id = SPVM_READ_WORD(state->code_current);
+	spvm_word sampled_image_id = SPVM_READ_WORD(state->code_current);
+	spvm_word coord_id = SPVM_READ_WORD(state->code_current);
+	spvm_word comp_id = SPVM_READ_WORD(state->code_current);
+
+	spvm_image_operands operands = {0};
+	if (word_count > 4) {
+		spvm_image_operands_parse(&operands, state);
+	}
+
+	int comp = state->results[comp_id].members[0].value.s;
+	if (state->analyzer && (comp < 0 || comp > 3)) {
+		state->analyzer->on_undefined_behavior(state, spvm_undefined_behavior_image_gather_invalid_comp);
+	}
+
+	spvm_vec4f res = spvm_op_image_gather(state, sampled_image_id,
+		coord_id, comp, &operands, NULL);
+
+	for (spvm_word i = 0; i < state->results[id].member_count; i++)
+		state->results[id].members[i].value.f = res.data[i];
+}
+void spvm_execute_OpImageDrefGather(spvm_word word_count, spvm_state_t state)
+{
+	spvm_word res_type = SPVM_READ_WORD(state->code_current);
+	spvm_word id = SPVM_READ_WORD(state->code_current);
+	spvm_word sampled_image_id = SPVM_READ_WORD(state->code_current);
+	spvm_word coord_id = SPVM_READ_WORD(state->code_current);
+	spvm_word dref_id = SPVM_READ_WORD(state->code_current);
+
+	spvm_image_operands operands = {0};
+	if (word_count > 4) {
+		spvm_image_operands_parse(&operands, state);
+	}
+
+	spvm_result_t dref = &state->results[dref_id];
+	float dref_val = dref->members[0].value.f;
+
+	const int comp = 0; // fixed for depth compare samplers
+	spvm_vec4f res = spvm_op_image_gather(state, sampled_image_id,
+		coord_id, comp, &operands, &dref_val);
+
+	for (spvm_word i = 0; i < state->results[id].member_count; i++)
+		state->results[id].members[i].value.f = res.data[i];
 }
 void spvm_execute_OpImageQuerySizeLod(spvm_word word_count, spvm_state_t state)
 {
@@ -411,15 +641,18 @@ void spvm_execute_OpImageQuerySizeLod(spvm_word word_count, spvm_state_t state)
 	spvm_word lod_id = SPVM_READ_WORD(state->code_current);
 
 	int lod = state->results[lod_id].members[0].value.s;
-	spvm_image_t img = state->results[image_id].members[0].image_data;
+	spvm_image* img = state->results[image_id].members[0].value.image;
 
-	// TODO: lod
+	// TODO: we just assume the lod sizes here, might be slightly different
+	// (there are vulkan extensions allowing to round up lod sizes).
+	// Should probably just be exposed as callback via state as well.
+	// TODO: layer, check image type
 	if (state->results[id].member_count > 0)
-		state->results[id].members[0].value.s = img->width;
+		state->results[id].members[0].value.s = SPVM_MAX(img->width >> lod, 1);
 	if (state->results[id].member_count > 1)
-		state->results[id].members[1].value.s = img->height;
+		state->results[id].members[1].value.s = SPVM_MAX(img->height >> lod, 1);
 	if (state->results[id].member_count > 2)
-		state->results[id].members[2].value.s = img->depth;
+		state->results[id].members[2].value.s = SPVM_MAX(img->depth >> lod, 1);
 }
 void spvm_execute_OpImageQuerySize(spvm_word word_count, spvm_state_t state)
 {
@@ -427,14 +660,68 @@ void spvm_execute_OpImageQuerySize(spvm_word word_count, spvm_state_t state)
 	spvm_word id = SPVM_READ_WORD(state->code_current);
 	spvm_word image_id = SPVM_READ_WORD(state->code_current);
 
-	spvm_image_t img = state->results[image_id].members[0].image_data;
+	spvm_image* img = state->results[image_id].members[0].value.image;
 
+	// TODO: layer, check image type
 	if (state->results[id].member_count > 0)
 		state->results[id].members[0].value.s = img->width;
 	if (state->results[id].member_count > 1)
 		state->results[id].members[1].value.s = img->height;
 	if (state->results[id].member_count > 2)
 		state->results[id].members[2].value.s = img->depth;
+}
+void spvm_execute_OpImageQueryLod(spvm_word word_count, spvm_state_t state)
+{
+	SPVM_SKIP_WORD(state->code_current);
+	spvm_word id = SPVM_READ_WORD(state->code_current);
+	spvm_word sampled_image_id = SPVM_READ_WORD(state->code_current);
+	spvm_word coord_id = SPVM_READ_WORD(state->code_current);
+
+	spvm_result_t container = &state->results[sampled_image_id];
+	assert(container->member_count == 2u);
+	spvm_image* image = container->members[0].value.image;
+	assert(image);
+	spvm_sampler* sampler = container->members[1].value.sampler;
+	assert(sampler);
+
+	spvm_result_t sampled_image_type = spvm_state_get_type_info(state->results, &state->results[container->pointer]);
+	assert(sampled_image_type);
+	spvm_result_t image_type = spvm_state_get_type_info(state->results, &state->results[sampled_image_type->pointer]);
+
+	assert(image_type);
+	assert(image_type->image_info);
+	assert(image_type->value_type == spvm_value_type_sampled_image);
+
+	struct spvm_sampled_image_lod_query lodq = spvm_sampled_image_query_lod(
+		state, image, image_type->image_info, sampler, coord_id, 0.f, 0.f);
+
+	// writeback
+	assert(state->results[id].member_count == 2);
+
+	// Per vulkan spec, those are the returned values
+	state->results[id].members[0].value.f = lodq.lambda_prime;
+	state->results[id].members[1].value.f = lodq.dl;
+}
+void spvm_execute_OpImageQueryLevels(spvm_word word_count, spvm_state_t state)
+{
+	SPVM_SKIP_WORD(state->code_current);
+	spvm_word id = SPVM_READ_WORD(state->code_current);
+	spvm_word image_id = SPVM_READ_WORD(state->code_current);
+
+	assert(state->results[image_id].members);
+	state->results[id].members[0].value.u = state->results[image_id].members[0].value.image->levels;
+}
+void spvm_execute_OpImageQuerySamples(spvm_word word_count, spvm_state_t state)
+{
+	SPVM_SKIP_WORD(state->code_current);
+	spvm_word id = SPVM_READ_WORD(state->code_current);
+	spvm_word image_id = SPVM_READ_WORD(state->code_current);
+
+	assert(state->results[image_id].members);
+	(void) image_id;
+
+	// TODO: spvm doesn't support multisampling atm
+	state->results[id].members[0].value.u = 1u;
 }
 void spvm_execute_OpImageRead(spvm_word word_count, spvm_state_t state)
 {
@@ -443,31 +730,33 @@ void spvm_execute_OpImageRead(spvm_word word_count, spvm_state_t state)
 	spvm_word image_id = SPVM_READ_WORD(state->code_current);
 	spvm_word coord_id = SPVM_READ_WORD(state->code_current);
 
-	spvm_image_t img = state->results[image_id].members[0].image_data;
+	spvm_image* img = state->results[image_id].members[0].value.image;
+	assert(img);
 
-	if (img != NULL) {
-		spvm_result_t coord = &state->results[coord_id];
-		spvm_result_t output = &state->results[id];
+	spvm_result_t coord = &state->results[coord_id];
+	spvm_result_t output = &state->results[id];
 
-		int x = 0, y = 0, z = 0;
+	int x = 0, y = 0, z = 0;
 
-		x = coord->members[0].value.s;
-		if (coord->member_count > 1)
-			y = coord->members[1].value.s;
-		if (coord->member_count > 2)
-			z = coord->members[2].value.s;
+	x = coord->members[0].value.s;
+	if (coord->member_count > 1)
+		y = coord->members[1].value.s;
+	if (coord->member_count > 2)
+		z = coord->members[2].value.s;
 
-		float* data = spvm_image_read(img, x, y, z);
-		
-		for (int i = 0; i < output->member_count; i++)
-			output->members[i].value.f = data[i];
+	int level = 0;
+	int layer = 0;
 
-		// report undefined behavior
-		if (state->analyzer) {
-			if (x < 0 || y < 0 || z < 0 || x >= img->width || y >= img->height || z >= img->depth)
-				state->analyzer->on_undefined_behavior(state, spvm_undefined_behavior_image_read_out_of_bounds);
-		}
+	// report undefined behavior
+	if (state->analyzer) {
+		if (x < 0 || y < 0 || z < 0 || x >= img->width || y >= img->height || z >= img->depth)
+			state->analyzer->on_undefined_behavior(state, spvm_undefined_behavior_image_read_out_of_bounds);
 	}
+
+	spvm_vec4f data = spvm_image_read(state, img, x, y, z, layer, level);
+
+	for (int i = 0; i < output->member_count; i++)
+		output->members[i].value.f = data.data[i];
 }
 void spvm_execute_OpImageWrite(spvm_word word_count, spvm_state_t state)
 {
@@ -475,32 +764,34 @@ void spvm_execute_OpImageWrite(spvm_word word_count, spvm_state_t state)
 	spvm_word coord_id = SPVM_READ_WORD(state->code_current);
 	spvm_word texel_id = SPVM_READ_WORD(state->code_current);
 
-	spvm_image_t img = state->results[image_id].members[0].image_data;
+	spvm_image* img = state->results[image_id].members[0].value.image;
+	assert(img);
 
-	if (img != NULL) {
-		spvm_result_t coord = &state->results[coord_id];
-		spvm_result_t texel = &state->results[texel_id];
+	spvm_result_t coord = &state->results[coord_id];
+	spvm_result_t texel = &state->results[texel_id];
 
-		int x = 0, y = 0, z = 0;
-		
-		x = coord->members[0].value.s;
-		if (coord->member_count > 1)
-			y = coord->members[1].value.s;
-		if (coord->member_count > 2)
-			z = coord->members[2].value.s;
+	int x = 0, y = 0, z = 0;
 
-		float rgba[4];
-		for (int i = 0; i < texel->member_count; i++)
-			rgba[i] = texel->members[i].value.f;
+	x = coord->members[0].value.s;
+	if (coord->member_count > 1)
+		y = coord->members[1].value.s;
+	if (coord->member_count > 2)
+		z = coord->members[2].value.s;
 
-		spvm_image_write(img, x, y, z, rgba);
+	spvm_vec4f rgba;
+	for (int i = 0; i < texel->member_count; i++)
+		rgba.data[i] = texel->members[i].value.f;
 
-		// report undefined behavior
-		if (state->analyzer) {
-			if (x < 0 || y < 0 || z < 0 || x >= img->width || y >= img->height || z >= img->depth)
-				state->analyzer->on_undefined_behavior(state, spvm_undefined_behavior_image_read_out_of_bounds);
-		}
+	int level = 0;
+	int layer = 0;
+
+	// report undefined behavior
+	if (state->analyzer) {
+		if (x < 0 || y < 0 || z < 0 || x >= img->width || y >= img->height || z >= img->depth)
+			state->analyzer->on_undefined_behavior(state, spvm_undefined_behavior_image_read_out_of_bounds);
 	}
+
+	spvm_image_write(state, img, x, y, z, level, layer, &rgba);
 }
 void spvm_execute_OpImage(spvm_word word_count, spvm_state_t state)
 {
@@ -508,8 +799,8 @@ void spvm_execute_OpImage(spvm_word word_count, spvm_state_t state)
 	spvm_word id = SPVM_READ_WORD(state->code_current);
 	spvm_word image_id = SPVM_READ_WORD(state->code_current);
 
-	spvm_image_t image = state->results[image_id].members[0].image_data;
-	state->results[id].members[0].image_data = image;
+	spvm_image* image = state->results[image_id].members[0].value.image;
+	state->results[id].members[0].value.image = image;
 }
 
 /* 3.32.11 Conversion Instructions */
@@ -580,7 +871,7 @@ void spvm_execute_OpUConvert(spvm_word word_count, spvm_state_t state)
 	spvm_word val = SPVM_READ_WORD(state->code_current);
 
 	spvm_result_t res_type_info = spvm_state_get_type_info(state->results, &state->results[res_type]);
-	
+
 	unsigned long long mask = 0xFF;
 	if (res_type_info->value_bitcount == 16)
 		mask = 0xFFFF;
@@ -860,7 +1151,7 @@ void spvm_execute_OpUDiv(spvm_word word_count, spvm_state_t state)
 
 	for (spvm_word i = 0; i < state->results[id].member_count; i++) {
 		state->results[id].members[i].value.u64 = state->results[op1].members[i].value.u64 / state->results[op2].members[i].value.u64;
-		
+
 		if (state->analyzer && state->results[op2].members[i].value.u64 == 0)
 			state->analyzer->on_undefined_behavior(state, spvm_undefined_behavior_div_by_zero);
 	}
@@ -874,9 +1165,9 @@ void spvm_execute_OpSDiv(spvm_word word_count, spvm_state_t state)
 
 	for (spvm_word i = 0; i < state->results[id].member_count; i++) {
 		state->results[id].members[i].value.s = state->results[op1].members[i].value.s / state->results[op2].members[i].value.s;
-		
+
 		if (state->analyzer && state->results[op2].members[i].value.s == 0) // TODO: also op2 == -1, op1 == minimum representable value?
-			state->analyzer->on_undefined_behavior(state, spvm_undefined_behavior_div_by_zero);	
+			state->analyzer->on_undefined_behavior(state, spvm_undefined_behavior_div_by_zero);
 	}
 }
 void spvm_execute_OpFDiv(spvm_word word_count, spvm_state_t state)
@@ -894,14 +1185,14 @@ void spvm_execute_OpFDiv(spvm_word word_count, spvm_state_t state)
 			state->results[id].members[i].value.d = state->results[op1].members[i].value.d / state->results[op2].members[i].value.d;
 
 			if (state->analyzer && state->results[op2].members[i].value.d == 0.0)
-				state->analyzer->on_undefined_behavior(state, spvm_undefined_behavior_div_by_zero);	
+				state->analyzer->on_undefined_behavior(state, spvm_undefined_behavior_div_by_zero);
 		}
 	else
 		for (spvm_word i = 0; i < state->results[id].member_count; i++) {
 			state->results[id].members[i].value.f = state->results[op1].members[i].value.f / state->results[op2].members[i].value.f;
 
 			if (state->analyzer && state->results[op2].members[i].value.f == 0.0f)
-				state->analyzer->on_undefined_behavior(state, spvm_undefined_behavior_div_by_zero);	
+				state->analyzer->on_undefined_behavior(state, spvm_undefined_behavior_div_by_zero);
 		}
 }
 void spvm_execute_OpUMod(spvm_word word_count, spvm_state_t state)
@@ -915,7 +1206,7 @@ void spvm_execute_OpUMod(spvm_word word_count, spvm_state_t state)
 		state->results[id].members[i].value.u64 = state->results[op1].members[i].value.u64 % state->results[op2].members[i].value.u64;
 
 		if (state->analyzer && state->results[op2].members[i].value.u64 == 0)
-			state->analyzer->on_undefined_behavior(state, spvm_undefined_behavior_mod_by_zero);	
+			state->analyzer->on_undefined_behavior(state, spvm_undefined_behavior_mod_by_zero);
 	}
 }
 void spvm_execute_OpSMod(spvm_word word_count, spvm_state_t state)
@@ -927,9 +1218,9 @@ void spvm_execute_OpSMod(spvm_word word_count, spvm_state_t state)
 
 	for (spvm_word i = 0; i < state->results[id].member_count; i++) {
 		state->results[id].members[i].value.s = state->results[op1].members[i].value.s % state->results[op2].members[i].value.s;
-		
+
 		if (state->analyzer && state->results[op2].members[i].value.s == 0) // TODO: mod by -1, while op1 is min representable value for operands type
-			state->analyzer->on_undefined_behavior(state, spvm_undefined_behavior_mod_by_zero);	
+			state->analyzer->on_undefined_behavior(state, spvm_undefined_behavior_mod_by_zero);
 	}
 }
 void spvm_execute_OpFMod(spvm_word word_count, spvm_state_t state)
@@ -944,21 +1235,21 @@ void spvm_execute_OpFMod(spvm_word word_count, spvm_state_t state)
 	// TODO: is there a better way to do this?
 	if (type_info->value_bitcount > 32)
 		for (spvm_word i = 0; i < state->results[id].member_count; i++) {
-			double op2_sign = SIGN(state->results[op2].members[i].value.d);
-			double op1_sign = SIGN(state->results[op1].members[i].value.d);
+			double op2_sign = SPVM_SIGN(state->results[op2].members[i].value.d);
+			double op1_sign = SPVM_SIGN(state->results[op1].members[i].value.d);
 			double sign = 1.0;
 			if (op2_sign != op1_sign)
 				sign = -1.0;
 
 			state->results[id].members[i].value.d = sign * fmod(state->results[op1].members[i].value.d, state->results[op2].members[i].value.d);
-		
+
 			if (state->analyzer && state->results[op2].members[i].value.d == 0.0)
-					state->analyzer->on_undefined_behavior(state, spvm_undefined_behavior_mod_by_zero);	
+					state->analyzer->on_undefined_behavior(state, spvm_undefined_behavior_mod_by_zero);
 		}
 	else
 		for (spvm_word i = 0; i < state->results[id].member_count; i++) {
-			float op2_sign = SIGN(state->results[op2].members[i].value.f);
-			float op1_sign = SIGN(state->results[op1].members[i].value.f);
+			float op2_sign = SPVM_SIGN(state->results[op2].members[i].value.f);
+			float op1_sign = SPVM_SIGN(state->results[op1].members[i].value.f);
 			float sign = 1.0;
 			if (op2_sign != op1_sign)
 				sign = -1.0;
@@ -966,7 +1257,7 @@ void spvm_execute_OpFMod(spvm_word word_count, spvm_state_t state)
 			state->results[id].members[i].value.f = sign * fmodf(state->results[op1].members[i].value.f, state->results[op2].members[i].value.f);
 
 			if (state->analyzer && state->results[op2].members[i].value.f == 0.0f)
-				state->analyzer->on_undefined_behavior(state, spvm_undefined_behavior_mod_by_zero);	
+				state->analyzer->on_undefined_behavior(state, spvm_undefined_behavior_mod_by_zero);
 		}
 }
 void spvm_execute_OpVectorTimesScalar(spvm_word word_count, spvm_state_t state)
@@ -1816,7 +2107,7 @@ void _spvm_context_create_execute_table(spvm_context_t ctx)
 	ctx->opcode_execute[SpvOpReturnValue] = spvm_execute_OpReturnValue;
 
 	ctx->opcode_execute[SpvOpExtInst] = spvm_execute_OpExtInst;
-	
+
 	ctx->opcode_execute[SpvOpConvertFToU] = spvm_execute_OpConvertFToU;
 	ctx->opcode_execute[SpvOpConvertFToS] = spvm_execute_OpConvertFToS;
 	ctx->opcode_execute[SpvOpConvertUToF] = spvm_execute_OpConvertUToF;
@@ -1877,7 +2168,7 @@ void _spvm_context_create_execute_table(spvm_context_t ctx)
 	ctx->opcode_execute[SpvOpBitFieldUExtract] = NULL;
 	ctx->opcode_execute[SpvOpBitReverse] = NULL;
 	ctx->opcode_execute[SpvOpBitCount] = NULL;
-	
+
 	ctx->opcode_execute[SpvOpAny] = spvm_execute_OpAny;
 	ctx->opcode_execute[SpvOpAll] = spvm_execute_OpAll;
 	ctx->opcode_execute[SpvOpIsNan] = spvm_execute_OpIsNan;
@@ -1912,27 +2203,28 @@ void _spvm_context_create_execute_table(spvm_context_t ctx)
 	ctx->opcode_execute[SpvOpFUnordGreaterThanEqual] = NULL;
 
 	ctx->opcode_execute[SpvOpSampledImage] = spvm_execute_OpSampledImage;
-	ctx->opcode_execute[SpvOpImageSampleImplicitLod] = spvm_execute_OpImageSampleImplicitLod;
-	ctx->opcode_execute[SpvOpImageSampleExplicitLod] = spvm_execute_OpImageSampleImplicitLod;
+	ctx->opcode_execute[SpvOpImageSampleImplicitLod] = spvm_execute_OpImageSample;
+	ctx->opcode_execute[SpvOpImageSampleExplicitLod] = spvm_execute_OpImageSample;
 	ctx->opcode_execute[SpvOpImageFetch] = spvm_execute_OpImageFetch;
 	ctx->opcode_execute[SpvOpImageGather] = spvm_execute_OpImageGather;
 	ctx->opcode_execute[SpvOpImageQuerySizeLod] = spvm_execute_OpImageQuerySizeLod;
 	ctx->opcode_execute[SpvOpImageQuerySize] = spvm_execute_OpImageQuerySize;
-	ctx->opcode_execute[SpvOpImageSampleDrefImplicitLod] = NULL;
-	ctx->opcode_execute[SpvOpImageSampleDrefExplicitLod] = NULL;
-	ctx->opcode_execute[SpvOpImageSampleProjImplicitLod] = NULL;
-	ctx->opcode_execute[SpvOpImageSampleProjExplicitLod] = NULL;
-	ctx->opcode_execute[SpvOpImageSampleProjDrefImplicitLod] = NULL;
-	ctx->opcode_execute[SpvOpImageSampleProjDrefExplicitLod] = NULL;
-	ctx->opcode_execute[SpvOpImageDrefGather] = NULL;
+	ctx->opcode_execute[SpvOpImageSampleDrefImplicitLod] = spvm_execute_OpImageSampleDref;
+	ctx->opcode_execute[SpvOpImageSampleDrefExplicitLod] = spvm_execute_OpImageSampleDref;
+	ctx->opcode_execute[SpvOpImageSampleProjImplicitLod] = spvm_execute_OpImageSampleProj;
+	ctx->opcode_execute[SpvOpImageSampleProjExplicitLod] = spvm_execute_OpImageSampleProj;
+	ctx->opcode_execute[SpvOpImageSampleProjDrefImplicitLod] = spvm_execute_OpImageSampleProjDref;
+	ctx->opcode_execute[SpvOpImageSampleProjDrefExplicitLod] = spvm_execute_OpImageSampleProjDref;
+	ctx->opcode_execute[SpvOpImageDrefGather] = spvm_execute_OpImageDrefGather;
 	ctx->opcode_execute[SpvOpImageRead] = spvm_execute_OpImageRead;
 	ctx->opcode_execute[SpvOpImageWrite] = spvm_execute_OpImageWrite;
 	ctx->opcode_execute[SpvOpImage] = spvm_execute_OpImage;
 	ctx->opcode_execute[SpvOpImageQueryFormat] = NULL;
 	ctx->opcode_execute[SpvOpImageQueryOrder] = NULL;
-	ctx->opcode_execute[SpvOpImageQueryLod] = NULL;
-	ctx->opcode_execute[SpvOpImageQueryLevels] = NULL;
-	ctx->opcode_execute[SpvOpImageQuerySamples] = NULL;
+	ctx->opcode_execute[SpvOpImageQueryLod] = spvm_execute_OpImageQueryLod;
+	ctx->opcode_execute[SpvOpImageQueryLevels] = spvm_execute_OpImageQueryLevels;
+	ctx->opcode_execute[SpvOpImageQuerySamples] = spvm_execute_OpImageQuerySamples;
+
 	ctx->opcode_execute[SpvOpImageSparseSampleImplicitLod] = NULL;
 	ctx->opcode_execute[SpvOpImageSparseSampleExplicitLod] = NULL;
 	ctx->opcode_execute[SpvOpImageSparseSampleDrefImplicitLod] = NULL;

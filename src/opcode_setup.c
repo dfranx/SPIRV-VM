@@ -41,7 +41,7 @@ void spvm_setup_OpMemberName(spvm_word word_count, spvm_state_t state)
 	spvm_word id = SPVM_READ_WORD(state->code_current);
 	spvm_word memb = SPVM_READ_WORD(state->code_current);
 
-	state->results[id].member_name_count = MAX(memb + 1, state->results[id].member_name_count);
+	state->results[id].member_name_count = SPVM_MAX(memb + 1, state->results[id].member_name_count);
 	state->results[id].member_name = (spvm_string*)realloc(state->results[id].member_name, sizeof(spvm_string) * state->results[id].member_name_count);
 
 	spvm_word slen = word_count - 2;
@@ -219,13 +219,21 @@ void spvm_setup_OpTypeImage(spvm_word word_count, spvm_state_t state)
 	if (word_count > 8)
 		info->access = SPVM_READ_WORD(state->code_current);
 }
+void spvm_setup_OpTypeSampler(spvm_word word_count, spvm_state_t state)
+{
+	spvm_word id = SPVM_READ_WORD(state->code_current);
+	state->results[id].type = spvm_result_type_type;
+	state->results[id].value_type = spvm_value_type_sampler;
+	state->results[id].pointer = SPVM_READ_WORD(state->code_current);
+	state->results[id].member_count = 1;
+}
 void spvm_setup_OpTypeSampledImage(spvm_word word_count, spvm_state_t state)
 {
 	spvm_word id = SPVM_READ_WORD(state->code_current);
 	state->results[id].type = spvm_result_type_type;
 	state->results[id].value_type = spvm_value_type_sampled_image;
 	state->results[id].pointer = SPVM_READ_WORD(state->code_current);
-	state->results[id].member_count = 1;
+	state->results[id].member_count = 2;
 }
 void spvm_setup_OpTypeArray(spvm_word word_count, spvm_state_t state)
 {
@@ -488,6 +496,7 @@ void _spvm_context_create_setup_table(spvm_context_t ctx)
 	ctx->opcode_setup[SpvOpTypeVector] = spvm_setup_OpTypeVector;
 	ctx->opcode_setup[SpvOpTypeMatrix] = spvm_setup_OpTypeMatrix;
 	ctx->opcode_setup[SpvOpTypeImage] = spvm_setup_OpTypeImage;
+	ctx->opcode_setup[SpvOpTypeSampler] = spvm_setup_OpTypeSampler;
 	ctx->opcode_setup[SpvOpTypeSampledImage] = spvm_setup_OpTypeSampledImage;
 	ctx->opcode_setup[SpvOpTypeArray] = spvm_setup_OpTypeArray;
 	ctx->opcode_setup[SpvOpTypeRuntimeArray] = spvm_setup_OpTypeRuntimeArray;

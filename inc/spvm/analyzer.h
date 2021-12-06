@@ -31,6 +31,7 @@ enum spvm_undefined_behavior {
 	spvm_undefined_behavior_smoothstep,						// smoothstep(edge0, edge1, x) when edge0 >= edge1
 	spvm_undefined_behavior_frexp,							// frexp(x, out exp) when x is NaN or inf
 	spvm_undefined_behavior_ldexp,							// ldexp(x, exp) when exp > 128 (float) or exp > 1024 (double)
+	spvm_undefined_behavior_image_gather_invalid_comp,		// OpImageGather -> component not in {0, 1, 2, 3}
 	spvm_undefined_behavior_count
 };
 

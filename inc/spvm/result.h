@@ -23,7 +23,7 @@ enum spvm_result_type {
 	spvm_result_type_function_parameter,
 	spvm_result_type_label
 };
-typedef struct {
+typedef struct spvm_image_info {
 	SpvDim dim;
 	spvm_byte depth;
 	spvm_byte arrayed;
@@ -32,7 +32,7 @@ typedef struct {
 	SpvImageFormat format;
 	SpvAccessQualifier access;
 } spvm_image_info;
-typedef struct {
+typedef struct spvm_decoration {
 	SpvDecoration type;
 	spvm_word literal1, literal2;
 	spvm_word index; // member
