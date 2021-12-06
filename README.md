@@ -108,8 +108,9 @@ cmake .
 make
 ```
 
-## TODO
-- better image support (mipmaps, image arrays, samplers)
+## Contributors
+- nyorain ([Twitter](https://twitter.com/nyorain), [GitHub](https://github.com/nyorain))
+- dfranx ([Twitter](https://twitter.com/dfranx_), [GitHub](https://github.com/dfranx))
 
 Contact me on this e-mail address: **dfranx at shadered dot org**
 

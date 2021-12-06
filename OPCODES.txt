@@ -29,7 +29,6 @@ OpExecutionModeId
 
 [3.32.6 Type-Declaration Instructions]
 ---------------------------------------------------------
-OpTypeSampler
 OpTypeOpaque
 OpTypeEvent
 OpTypeDeviceEvent
@@ -62,22 +61,9 @@ OpInBoundsPtrAccessChain
 
 [3.32.10 Image Instructions]
 ---------------------------------------------------------
-OpSampledImage
-OpImageSampleExplicitLod
-OpImageSampleDrefImplicitLod
-OpImageSampleDrefExplicitLod
-OpImageSampleProjImplicitLod
-OpImageSampleProjExplicitLod
-OpImageSampleProjDrefImplicitLod
-OpImageSampleProjDrefExplicitLod
-OpImageDrefGather
-OpImage
 OpImageQueryFormat
 OpImageQueryOrder
 OpImageQuerySizeLod
-OpImageQueryLod
-OpImageQueryLevels
-OpImageQuerySamples
 OpImageSparseSampleImplicitLod
 OpImageSparseSampleExplicitLod
 OpImageSparseSampleDrefImplicitLod
