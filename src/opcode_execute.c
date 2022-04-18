@@ -1929,10 +1929,13 @@ void spvm_execute_OpBranchConditional(spvm_word word_count, spvm_state_t state)
 	spvm_word true_branch = SPVM_READ_WORD(state->code_current);
 	spvm_word false_branch = SPVM_READ_WORD(state->code_current);
 
-	if (state->results[cond].members[0].value.b)
+	if (state->results[cond].members[0].value.b) {
 		state->code_current = state->results[true_branch].source_location;
-	else
+		state->function_stack_cfg[state->function_stack_current] = true_branch;
+	} else {
 		state->code_current = state->results[false_branch].source_location;
+		state->function_stack_cfg[state->function_stack_current] = false_branch;
+	}
 
 	state->did_jump = 1;
 }
@@ -1952,13 +1955,16 @@ void spvm_execute_OpSwitch(spvm_word word_count, spvm_state_t state)
 
 		if (val == lit) {
 			state->code_current = state->results[lbl].source_location;
+			state->function_stack_cfg[state->function_stack_current] = lbl;
 			found = 1;
 			break;
 		}
 	}
 
-	if (!found)
+	if (!found) {
 		state->code_current = state->results[def_lbl].source_location;
+		state->function_stack_cfg[state->function_stack_current] = def_lbl;
+	}
 
 	state->did_jump = 1;
 }
