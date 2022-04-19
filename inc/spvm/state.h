@@ -34,6 +34,7 @@ typedef struct spvm_state {
 	spvm_word return_id;
 	spvm_word* function_stack_returns;
 	spvm_word* function_stack_cfg;
+	spvm_word* function_stack_cfg_parent;
 
 	void(*emit_vertex)(struct spvm_state*, spvm_word);
 	void(*end_primitive)(struct spvm_state*, spvm_word);

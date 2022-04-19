@@ -107,12 +107,14 @@ void spvm_state_prepare(spvm_state_t state, spvm_word fnLocation)
 		state->function_stack_info = (spvm_result_t*)malloc(state->function_stack_count * sizeof(spvm_result_t));
 		state->function_stack_returns = (spvm_word*)malloc(state->function_stack_count * sizeof(spvm_word));
 		state->function_stack_cfg = (spvm_word*)malloc(state->function_stack_count * sizeof(spvm_word));
+		state->function_stack_cfg_parent = (spvm_word*)malloc(state->function_stack_count * sizeof(spvm_word));
 	}
 
 	state->function_stack_current = 0;
 	state->function_stack[0] = state->code_current;
 	state->function_stack_info[0] = state->current_function;
 	state->function_stack_cfg[0] = 0;
+	state->function_stack_cfg_parent[0] = 0;
 	state->did_jump = 0;
 	state->discarded = 0;
 	state->instruction_count = 0;
@@ -417,12 +419,14 @@ void spvm_state_push_function_stack(spvm_state_t state, spvm_result_t func, spvm
 		state->function_stack_info = (spvm_result_t*)realloc(state->function_stack_info, state->function_stack_count * sizeof(spvm_result_t));
 		state->function_stack_returns = (spvm_word*)realloc(state->function_stack_returns, state->function_stack_count * sizeof(spvm_word));
 		state->function_stack_cfg = (spvm_word*)realloc(state->function_stack_cfg, state->function_stack_count * sizeof(spvm_word));
+		state->function_stack_cfg_parent = (spvm_word*)realloc(state->function_stack_cfg_parent, state->function_stack_count * sizeof(spvm_word));
 	}
 
 	state->function_stack[state->function_stack_current] = func->source_location;
 	state->function_stack_info[state->function_stack_current] = func;
 	state->function_stack_returns[state->function_stack_current] = func_res_id;
 	state->function_stack_cfg[state->function_stack_current] = 0;
+	state->function_stack_cfg_parent[state->function_stack_current] = 0;
 
 	state->code_current = func->source_location;
 	state->current_function = func;
@@ -460,6 +464,7 @@ void spvm_state_delete(spvm_state_t state)
 		free(state->function_stack_info);
 		free(state->function_stack_returns);
 		free(state->function_stack_cfg);
+		free(state->function_stack_cfg_parent);
 	}
 
 	free(state->results);
