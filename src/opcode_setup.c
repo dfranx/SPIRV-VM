@@ -461,7 +461,7 @@ void spvm_setup_OpLabel(spvm_word word_count, spvm_state_t state)
 	spvm_word id = SPVM_READ_WORD(state->code_current);
 
 	state->results[id].type = spvm_result_type_label;
-	state->results[id].source_location = state->code_current;
+	state->results[id].source_location = state->code_current - 2; // store original label location (instruction has length 2)
 }
 
 

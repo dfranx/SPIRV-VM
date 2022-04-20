@@ -1916,19 +1916,13 @@ void spvm_execute_OpPhi(spvm_word word_count, spvm_state_t state)
 void spvm_execute_OpLabel(spvm_word word_count, spvm_state_t state)
 {
 	spvm_word id = SPVM_READ_WORD(state->code_current);
-
-	// Make sure we do not overwrite parent block id if we encounter an explicit label after a jump
-	if (state->function_stack_cfg[state->function_stack_current] != id) {
-		state->function_stack_cfg_parent[state->function_stack_current] = state->function_stack_cfg[state->function_stack_current];
-		state->function_stack_cfg[state->function_stack_current] = id;
-	}
+	state->function_stack_cfg_parent[state->function_stack_current] = state->function_stack_cfg[state->function_stack_current];
+	state->function_stack_cfg[state->function_stack_current] = id;
 }
 void spvm_execute_OpBranch(spvm_word word_count, spvm_state_t state)
 {
 	spvm_word id = SPVM_READ_WORD(state->code_current);
 	state->code_current = state->results[id].source_location;
-	state->function_stack_cfg_parent[state->function_stack_current] = state->function_stack_cfg[state->function_stack_current];
-	state->function_stack_cfg[state->function_stack_current] = id;
 
 	state->did_jump = 1;
 }
@@ -1938,14 +1932,10 @@ void spvm_execute_OpBranchConditional(spvm_word word_count, spvm_state_t state)
 	spvm_word true_branch = SPVM_READ_WORD(state->code_current);
 	spvm_word false_branch = SPVM_READ_WORD(state->code_current);
 
-	state->function_stack_cfg_parent[state->function_stack_current] = state->function_stack_cfg[state->function_stack_current];
-	if (state->results[cond].members[0].value.b) {
+	if (state->results[cond].members[0].value.b)
 		state->code_current = state->results[true_branch].source_location;
-		state->function_stack_cfg[state->function_stack_current] = true_branch;
-	} else {
+	else
 		state->code_current = state->results[false_branch].source_location;
-		state->function_stack_cfg[state->function_stack_current] = false_branch;
-	}
 
 	state->did_jump = 1;
 }
@@ -1965,18 +1955,13 @@ void spvm_execute_OpSwitch(spvm_word word_count, spvm_state_t state)
 
 		if (val == lit) {
 			state->code_current = state->results[lbl].source_location;
-			state->function_stack_cfg_parent[state->function_stack_current] = state->function_stack_cfg[state->function_stack_current];
-			state->function_stack_cfg[state->function_stack_current] = lbl;
 			found = 1;
 			break;
 		}
 	}
 
-	if (!found) {
+	if (!found)
 		state->code_current = state->results[def_lbl].source_location;
-		state->function_stack_cfg_parent[state->function_stack_current] = state->function_stack_cfg[state->function_stack_current];
-		state->function_stack_cfg[state->function_stack_current] = def_lbl;
-	}
 
 	state->did_jump = 1;
 }
