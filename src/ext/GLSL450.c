@@ -683,7 +683,7 @@ void spvm_execute_GLSL450_SmoothStep(spvm_word type, spvm_word id, spvm_word wor
 			double edge1Val = state->results[edge1].members[i].value.d;
 
 			if (edge0Val == edge1Val) {
-				state->results[id].members[i].value.d = 0.0;
+				state->results[id].members[i].value.d = (xVal < edge0Val ? 0.0 : 1.0);
 			} else {
 				xVal = SPVM_CLAMP((xVal - edge0Val) / (edge1Val - edge0Val), 0.0, 1.0);
 				state->results[id].members[i].value.d = xVal * xVal * (3.0 - 2.0 * xVal);
@@ -700,7 +700,7 @@ void spvm_execute_GLSL450_SmoothStep(spvm_word type, spvm_word id, spvm_word wor
 			float edge1Val = state->results[edge1].members[i].value.f;
 
 			if (edge0Val == edge1Val) {
-				state->results[id].members[i].value.f = 0.0f;
+				state->results[id].members[i].value.f = (xVal < edge0Val ? 0.0f : 1.0f);
 			} else {
 				xVal = SPVM_CLAMP((xVal - edge0Val) / (edge1Val - edge0Val), 0.0f, 1.0f);
 				state->results[id].members[i].value.f = xVal * xVal * (3.0f - 2.0f * xVal);
