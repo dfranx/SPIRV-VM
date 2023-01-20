@@ -461,7 +461,7 @@ void spvm_setup_OpLabel(spvm_word word_count, spvm_state_t state)
 	spvm_word id = SPVM_READ_WORD(state->code_current);
 
 	state->results[id].type = spvm_result_type_label;
-	state->results[id].source_location = state->code_current;
+	state->results[id].source_location = state->code_current - 2; // store original label location (instruction has length 2)
 }
 
 
@@ -472,6 +472,7 @@ void _spvm_context_create_setup_table(spvm_context_t ctx)
 {
 	ctx->opcode_setup = (spvm_opcode_func*)calloc(SPVM_OPCODE_TABLE_LENGTH, sizeof(spvm_opcode_func));
 
+	ctx->opcode_setup[SpvOpUndef] = spvm_setup_constant;
 	ctx->opcode_setup[SpvOpSource] = spvm_setup_OpSource;
 	ctx->opcode_setup[SpvOpSourceExtension] = spvm_setup_OpSourceExtension;
 	ctx->opcode_setup[SpvOpName] = spvm_setup_OpName;
