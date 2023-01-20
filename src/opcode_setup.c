@@ -472,6 +472,7 @@ void _spvm_context_create_setup_table(spvm_context_t ctx)
 {
 	ctx->opcode_setup = (spvm_opcode_func*)calloc(SPVM_OPCODE_TABLE_LENGTH, sizeof(spvm_opcode_func));
 
+	ctx->opcode_setup[SpvOpUndef] = spvm_setup_constant;
 	ctx->opcode_setup[SpvOpSource] = spvm_setup_OpSource;
 	ctx->opcode_setup[SpvOpSourceExtension] = spvm_setup_OpSourceExtension;
 	ctx->opcode_setup[SpvOpName] = spvm_setup_OpName;

@@ -37,7 +37,7 @@ spvm_state_t _spvm_state_create_base(spvm_program_t prog, spvm_byte force_derv, 
 		spvm_word opcode = (opcode_data & SpvOpCodeMask);
 		spvm_source cur_code = state->code_current;
 
-		if (opcode <= SPVM_OPCODE_TABLE_LENGTH && state->context->opcode_setup[opcode] != 0)
+		if (opcode >= 0 && opcode <= SPVM_OPCODE_TABLE_LENGTH && state->context->opcode_setup[opcode] != NULL)
 			state->context->opcode_setup[opcode](word_count, state);
 
 		state->code_current = (cur_code + word_count);
@@ -203,7 +203,7 @@ void spvm_state_step_opcode(spvm_state_t state)
 	SpvOp opcode = (opcode_data & SpvOpCodeMask);
 	spvm_source cur_code = state->code_current;
 
-	if (opcode <= SPVM_OPCODE_TABLE_LENGTH && state->context->opcode_execute[opcode] != 0) {
+	if (opcode >= 0 && opcode <= SPVM_OPCODE_TABLE_LENGTH && state->context->opcode_execute[opcode] != NULL) {
 		state->context->opcode_execute[opcode](word_count, state);
 		if (opcode != SpvOpLine && opcode != SpvOpNoLine)
 			state->instruction_count++;
@@ -241,7 +241,7 @@ void spvm_state_call_function(spvm_state_t state)
 		SpvOp opcode = (opcode_data & SpvOpCodeMask);
 		cur_code = state->code_current;
 
-		if (opcode <= SPVM_OPCODE_TABLE_LENGTH && state->context->opcode_execute[opcode] != 0) {
+		if (opcode >= 0 && opcode <= SPVM_OPCODE_TABLE_LENGTH && state->context->opcode_execute[opcode] != NULL) {
 			state->context->opcode_execute[opcode](word_count, state);
 			if (opcode != SpvOpLine && opcode != SpvOpNoLine)
 				state->instruction_count++;
